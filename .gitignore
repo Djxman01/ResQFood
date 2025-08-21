@@ -9,6 +9,7 @@ __pycache__/
 venv/
 ENV/
 env/
+.env
 
 # Django / SQLite
 *.sqlite3
