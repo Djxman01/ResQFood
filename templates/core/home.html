@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+  <h1>Bienvenido a ResQFood</h1>
+  <p>Explorá los packs disponibles:</p>
+  <p><a href="{% url 'packs:list' %}">Ir a Packs →</a></p>
+{% endblock %}

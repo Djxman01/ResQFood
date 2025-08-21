@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Packs (Frontend){% endblock %}
+{% block content %}
+  <h1>Frontend de Packs (Template Django)</h1>
+  <div id="lista"></div>
+  <script>
+    fetch("/api/packs/")
+      .then(r => r.json())
+      .then(d => {
+        const items = Array.isArray(d) ? d : (d.results || []);
+        document.getElementById("lista").innerHTML =
+          items.length ? `<pre>${JSON.stringify(items[0], null, 2)}</pre>` : "Sin resultados.";
+      })
+      .catch(() => document.getElementById("lista").textContent = "Error cargando API");
+  </script>
+{% endblock %}

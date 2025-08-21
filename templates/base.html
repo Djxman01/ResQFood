@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Mi sitio{% endblock %}</title>
+  {% load static %}
+</head>
+<body>
+  <nav style="display:flex;gap:1rem;justify-content:space-between">
+    <div>
+      <a href="{% url 'home' %}">Inicio</a>
+      <a href="{% url 'packs:list' %}">Packs</a>
+    </div>
+    <div>
+      {% if user.is_authenticated %}
+        Hola, {{ user.username }} · <a href="{% url 'logout' %}">Salir</a>
+      {% else %}
+        <a href="{% url 'login' %}?next={{ request.path }}">Ingresar</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main style="padding:1rem">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
