@@ -1,7 +1,73 @@
 {% extends "base.html" %}
-{% block title %}Inicio{% endblock %}
+{% block title %}Inicio · ResQFood{% endblock %}
+
 {% block content %}
-  <h1>Bienvenido a ResQFood</h1>
-  <p>Explorá los packs disponibles:</p>
-  <p><a href="{% url 'packs:list' %}">Ir a Packs →</a></p>
+
+<section class="section">
+  <h2>Hola, ¿Qué vas a pedir hoy?</h2>
+  <div class="grid-chips">
+    <a class="chip" href="{% url 'packs:list' %}?search=restaurante">🍽️ Restaurantes</a>
+    <a class="chip" href="{% url 'packs:list' %}?search=mercado">🛒 Supermercados</a>
+    <a class="chip" href="{% url 'packs:list' %}?search=verduleria">🥬 Verdulerías</a>
+    <a class="chip" href="{% url 'packs:list' %}?search=cafe">☕ Café & Deli</a>
+    <a class="chip" href="{% url 'packs:list' %}?search=helado">🍨 Helados</a>
+    <a class="chip" href="{% url 'packs:list' %}?search=kiosco">🧃 Kioscos</a>
+  </div>
+</section>
+
+<section class="section">
+  <h2>No te pierdas estas promociones</h2>
+  <div class="scroll-x" id="promos"></div>
+</section>
+
+<section class="section">
+  <h2>Descubrí estas opciones</h2>
+  <div class="scroll-x" id="destacados"></div>
+</section>
+
+<script>
+  // Helper precio
+  const money = x => {
+    try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(x); }
+    catch { return `$${x}` }
+  };
+
+  function cardTpl(p){
+    const partner = p["partner-nombre"] || p.partner_nombre || "-";
+    const t = p.titulo || p.nombre || "Pack";
+    const pOrig = p.precio_original ?? p.precio ?? null;
+    const pOfer = p.precio_oferta ?? p.precio ?? null;
+    const etiqueta = p.etiqueta ? `<span class="pill">${p.etiqueta}</span>` : "";
+    const img = p.imagen_url || `https://picsum.photos/seed/${p.id}/600/300`; 
+    return `
+      <a class="card" href="/packs/${p.id}/">
+        <img src="${img}" alt="${t}">    
+        <div class="p">
+          ${etiqueta}
+          <h3 style="margin:8px 0 4px 0">${t}</h3>
+          <div style="color:#666; font-size:14px; margin-bottom:6px">${partner}</div>
+          <div class="price">
+            ${pOrig && pOfer && pOrig != pOfer
+              ? `<span class="line">${money(pOrig)}</span> ${money(pOfer)}`
+              : `${money(pOfer ?? pOrig ?? 0)}`}
+          </div>
+        </div>
+      </a>
+    `;
+  }
+
+  async function loadInto(el, url){
+    const res = await fetch(url);
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.results || []);
+    document.getElementById(el).innerHTML = items.map(cardTpl).join("") || "<p>Sin resultados.</p>";
+  }
+
+  // “Promos”: orden por precio_oferta asc y etiqueta=excedente (si tu filtro lo soporta)
+  loadInto("promos", "/api/packs/?ordering=precio_oferta&etiqueta=excedente");
+
+  // “Destacados”: los más nuevos
+  loadInto("destacados", "/api/packs/?ordering=-creado_at");
+</script>
+
 {% endblock %}

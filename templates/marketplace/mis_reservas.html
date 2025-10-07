@@ -1,0 +1,128 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Mis reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Si usás Tailwind/Bootstrap, enlazalo aquí -->
+  <style>
+    .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; display:flex; flex-direction:column; }
+    .badge { font-size:.75rem; padding:.25rem .5rem; border-radius:.5rem; display:inline-block; margin-top:.25rem; }
+    .b-pend { background:#FEF3C7; color:#92400E; }  /* pendiente */
+    .b-paga { background:#DBEAFE; color:#1E3A8A; }  /* pagado   */
+    .b-ret  { background:#DCFCE7; color:#166534; }  /* retirado */
+    .b-canc { background:#E5E7EB; color:#374151; }  /* cancelado*/
+    .b-exp  { background:#FEE2E2; color:#991B1B; }  /* expirado */
+    .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; cursor:pointer; }
+    .btn:hover { background:#F9FAFB; }
+    .muted { color:#6b7280; font-size:.9rem; }
+    img { width:100%; height:140px; object-fit:cover; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <main class="container" style="max-width:1100px;margin:1.25rem auto;padding:0 1rem;">
+    <h1 style="font-size:1.5rem; font-weight:700; margin-bottom:1rem;">Mis reservas</h1>
+
+    {% if orders %}
+      <ul class="grid">
+        {% for o in orders %}
+          <li class="card" id="order-{{ o.id }}">
+            {% if o.pack.imagen %}
+              <img src="{{ o.pack.imagen.url }}" alt="{{ o.pack.titulo }}">
+            {% endif %}
+
+            <div style="flex:1; margin-top:.5rem;">
+              <div style="font-weight:600;">{{ o.pack.titulo }}</div>
+              <div class="muted">{{ o.pack.partner.nombre }}</div>
+
+              <div class="muted">
+                <span style="font-weight:600;">Retiro:</span>
+                {{ o.pack.pickup_start|date:"d/m/Y H:i" }} — {{ o.pack.pickup_end|date:"d/m/Y H:i" }}
+              </div>
+
+              <div class="muted">
+                <span style="font-weight:600;">Precio:</span> ${{ o.precio_pagado }}
+              </div>
+
+              {% comment %} Badge de estado {% endcomment %}
+              {% with es=o.estado %}
+                <span class="badge
+                  {% if es == 'pendiente' %}b-pend
+                  {% elif es == 'pagado' %}b-paga
+                  {% elif es == 'retirado' %}b-ret
+                  {% elif es == 'cancelado' %}b-canc
+                  {% elif es == 'expirado' %}b-exp
+                  {% endif %}
+                ">
+                  {{ es|upper }}
+                </span>
+              {% endwith %}
+            </div>
+
+            {% comment %} Botón Cancelar si aplica {% endcomment %}
+            {% if o.estado == 'pendiente' or o.estado == 'pagado' %}
+              {% if o.pack.pickup_end > now %}
+                <button class="btn" onclick="cancelOrder({{ o.id }})">Cancelar</button>
+              {% endif %}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% if is_paginated %}
+        <nav style="margin-top:1rem;">
+          {% if page_obj.has_previous %}
+            <a class="btn" href="?page={{ page_obj.previous_page_number }}">« Anterior</a>
+          {% endif %}
+          <span class="muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a class="btn" href="?page={{ page_obj.next_page_number }}">Siguiente »</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <p>Aún no tenés reservas.</p>
+    {% endif %}
+  </main>
+
+  <script>
+    // CSRF: tomado de la doc de Django
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    async function cancelOrder(id) {
+      if (!confirm('¿Cancelar esta reserva? Esto liberará el stock.')) return;
+      try {
+        const res = await fetch(`/api/orders/${id}/cancel/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken, // si usás sesión/csrf
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'No se pudo cancelar');
+
+        // Marcar visualmente como cancelado
+        const li = document.getElementById(`order-${id}`);
+        if (li) {
+          // Cambiamos el badge y quitamos el botón
+          const badge = li.querySelector('.badge');
+          if (badge) { badge.textContent = 'CANCELADO'; badge.className = 'badge b-canc'; }
+          const btn = li.querySelector('button');
+          if (btn) btn.remove();
+        }
+        alert('Orden cancelada ✅');
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+  </script>
+</body>
+</html>

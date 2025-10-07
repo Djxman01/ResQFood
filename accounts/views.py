@@ -8,6 +8,18 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from .utils import api_get, api_post
 from django.views.decorators.http import require_http_methods
+from django.views.generic import CreateView
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from .forms import CustomUserCreationForm
+
+
+
+
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    template_name = "registration/signup.html"
+    success_url = reverse_lazy("login")  # o packs:list si preferís
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -110,3 +122,9 @@ def redeem_view(request):
             err = {"detail": "Error inesperado"}
         messages.error(request, f"No se pudo canjear: {err}")
     return redirect("redeem_view")
+
+
+class SignUpView(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = "registration/signup.html"
+    success_url = reverse_lazy("login")  # o reverse_lazy("packs:list")

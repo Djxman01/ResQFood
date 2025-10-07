@@ -9,17 +9,22 @@ from django.core.exceptions import ValidationError
 
 
 class Partner(models.Model):
-    class Rubro(models.TextChoices):
-        SUPER = "super", "Supermercado"
-        KIOSCO = "kiosco", "Kiosco"
+    class Categoria(models.TextChoices):
+        RESTAURANTE = "restaurante", "Restaurante"
         VERDULERIA = "verduleria", "Verdulería"
-        RESTO = "resto", "Restaurante"
+        SUPERMERCADO = "supermercado", "Supermercado"
+        CAFE = "cafe", "Café & Deli"
+        KIOSCO = "kiosco", "Kiosco"
+
+
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="partners")
+    categoria = models.CharField(max_length=20, choices=Categoria.choices, default=Categoria.RESTAURANTE)
     nombre = models.CharField(max_length=120)
-    rubro = models.CharField(max_length=20, choices=Rubro.choices)
     direccion = models.CharField(max_length=200)
     creado_at = models.DateTimeField(auto_now_add=True)
+    imagen = models.ImageField(upload_to="partners/", blank=True, null=True)
+
 
     def __str__(self):
         return self.nombre
@@ -38,6 +43,8 @@ class Pack(models.Model):
     pickup_start = models.DateTimeField()
     pickup_end = models.DateTimeField()
     creado_at = models.DateTimeField(auto_now_add=True)
+    imagen = models.ImageField(upload_to="packs/", blank=True, null=True)  # 👈 imagen opcional
+
 
     def __str__(self):
         return f"{self.titulo} - {self.partner.nombre}"

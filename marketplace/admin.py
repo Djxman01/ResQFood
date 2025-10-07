@@ -4,8 +4,8 @@ from .models import Partner, Pack, Order
 
 @admin.register(Partner)
 class PartnerAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "rubro", "creado_at")
-    search_fields = ("nombre", "rubro")
+    list_display = ("nombre", "categoria", "creado_at")
+    search_fields = ("nombre", "categoria")
 
 @admin.register(Pack)
 class PackAdmin(admin.ModelAdmin):
