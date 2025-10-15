@@ -65,10 +65,14 @@
         {% else %}
           <div class="qrbox">
             <span class="muted">El QR aparecerá cuando el pago esté confirmado.</span>
-          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            <button class="btn" id="payNowBtn">Pagar ahora</button>\r\n          </div>\r\n        {% endif %}
+          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            <button class="btn" id="payNowBtn" data-order-id="{{ order.id }}">Pagar ahora</button>\r\n          </div>\r\n        {% endif %}
         <p class="muted" style="text-align:center; margin-top:.25rem;">
           ID de pedido: <strong>#{{ order.id }}</strong>
         </p>
+        <div style="text-align:center;">
+          <span id="payLoading" style="display:none;">Iniciando pago…</span>
+          <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
+        </div>
       </div>
     </section>
   </main>
@@ -89,14 +93,7 @@
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop().split(';').shift();
     }
-    btn.addEventListener('click', async function(){
-      try{
-        const res = await fetch('/api/payments/mp/start/{{ order.id }}/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin'});
-        const data = await res.json();
-        if(!res.ok){ alert(data.detail || 'No se pudo iniciar el pago'); return; }
-        if(data.init_point){ window.location = data.init_point; }
-      }catch(e){ alert('Error de red'); }
-    });
+    // replaced by enhanced handler below
   })();
 </script>{% if order.estado != 'pagado' %}
 <script>
@@ -124,3 +121,75 @@
 {% endif %}
 
 
+<script>
+(function () {
+  function getCookie(name) {
+    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return m ? m.pop() : '';
+  }
+
+  const btn = document.getElementById('payNowBtn');
+  const spinner = document.getElementById('payLoading');
+  const err = document.getElementById('payError');
+  const badge = document.getElementById('estado-badge');
+
+  if (!btn) return;
+
+  let inFlight = false;
+
+  async function startPayment(orderId) {
+    if (inFlight) return;
+    inFlight = true;
+
+    if (err) err.style.display = 'none';
+    if (spinner) spinner.style.display = 'inline';
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+
+    try {
+      const resp = await fetch(`/api/payments/mp/start/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Accept': 'application/json'
+        },
+        credentials: 'same-origin'
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`No se pudo iniciar el pago (${resp.status}). ${text || ''}`);
+      }
+
+      const data = await resp.json();
+      if (!data.init_point) {
+        throw new Error('No se recibió init_point desde el servidor.');
+      }
+
+      window.location.href = data.init_point;
+    } catch (e) {
+      if (err) {
+        err.textContent = e && e.message ? e.message : 'Error en la red. Intentá nuevamente.';
+        err.style.display = 'block';
+      } else {
+        alert(e && e.message ? e.message : 'Error en la red. Intentá nuevamente.');
+      }
+      btn.disabled = false;
+    } finally {
+      if (spinner) spinner.style.display = 'none';
+      btn.removeAttribute('aria-busy');
+      inFlight = false;
+    }
+  }
+
+  btn.addEventListener('click', function () {
+    const orderId = this.getAttribute('data-order-id');
+    if (!orderId) return;
+    if (badge && badge.textContent.trim().toLowerCase() === 'pagado') {
+      this.disabled = true;
+      return;
+    }
+    startPayment(orderId);
+  });
+})();
+</script>
