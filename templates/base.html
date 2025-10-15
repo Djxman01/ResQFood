@@ -173,7 +173,7 @@
         <span style="font-size:14px;color:#666;">Hola, {{ user.username }}</span>
         <form action="{% url 'logout' %}" method="post" style="display:inline">
           {% csrf_token %}
-          <a href="{% url 'mis_reservas' %}">Mis reservas</a>
+          <a href="{% url 'cart' %}">Mi Carrito <span id="cart-badge" class="pill">{{ cart_count|default:0 }}</span></a>
           <button class="btn" type="submit">Salir</button>
         </form>
         {% else %}
@@ -215,6 +215,13 @@
     function irBuscar(e) {
       // manda a /packs/?search=...
       // (si ya usás filtros allí, se aplican)
+    }
+  </script>
+
+  <script>
+    function updateCartBadge(n){
+      var el = document.getElementById('cart-badge');
+      if(el){ el.textContent = n; }
     }
   </script>
 

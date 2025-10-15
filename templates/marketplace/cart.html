@@ -1,0 +1,89 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Mi Carrito</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    .grid { display:grid; gap:1rem; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
+    .muted { color:#6b7280; font-size:.9rem; }
+    img { width:100%; height:140px; object-fit:cover; border-radius:8px; }
+    .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:#fff; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <main class="container" style="max-width:1100px;margin:1.25rem auto;padding:0 1rem;">
+    <h1 style="font-size:1.5rem; font-weight:700; margin-bottom:1rem;">Mi Carrito</h1>
+    {% if pending_order_id %}
+      <div style="padding:8px 12px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; border-radius:8px; margin-bottom:12px;">
+        Tenés un pedido pendiente de pago. <a href="/orders/{{ pending_order_id }}/?from=cart">Continuar pago</a>
+      </div>
+    {% endif %}
+
+    {% if cart and cart.items.all %}
+    <ul class="grid">
+      {% for it in cart.items.all %}
+      <li class="card">
+        {% if it.pack.imagen %}
+        <img src="{{ it.pack.imagen.url }}" alt="{{ it.pack.titulo }}">
+        {% endif %}
+        <div style="margin-top:.5rem;">
+          <div style="font-weight:600;">{{ it.pack.titulo }}</div>
+          <div class="muted">{{ it.pack.partner.nombre }}</div>
+          <div class="muted"><strong>Precio:</strong> ${{ it.pack.precio_oferta }}</div>
+          <div class="muted"><strong>Cantidad:</strong> {{ it.quantity }}</div>
+        </div>
+        <form method="post" action="/api/cart/remove/" onsubmit="return removePack(event, {{ it.pack.id }})">
+          {% csrf_token %}
+          <button class="btn" style="margin-top:.5rem;">Quitar</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% else %}
+    <p class="muted">Tu carrito está vacío.</p>
+    {% endif %}
+    <div style="margin-top:1rem;">
+      <div><strong>Comercio:</strong> {% if cart and cart.merchant %}{{ cart.merchant.nombre }}{% else %}-{% endif %}</div>
+      <div><strong>Total:</strong> ${% if cart %}{{ cart.total }}{% else %}0.00{% endif %}</div>
+      <button class="btn" style="margin-top:.5rem;" id="checkoutBtn" {% if pending_order_id %}disabled{% endif %}>Proceder al pago</button>
+    </div>
+  </main>
+  <script>
+    async function removePack(ev, packId){
+      ev.preventDefault();
+      const form = ev.target;
+      const res = await fetch(form.action, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': (document.querySelector('input[name=csrfmiddlewaretoken]')||{}).value}, body: JSON.stringify({pack_id: packId})});
+      if(res.ok){ location.reload(); }
+      else{ alert('No se pudo quitar el pack'); }
+      return false;
+    }
+    // Checkout
+    (function(){
+      const btn = document.getElementById('checkoutBtn');
+      if(!btn) return;
+      btn.addEventListener('click', async function(){
+        {% if pending_order_id %}
+        window.location = '/orders/{{ pending_order_id }}/?from=cart';
+        return;
+        {% endif %}
+        try{
+          const res = await fetch('/api/cart/checkout/', { method:'POST', headers:{ 'X-CSRFToken': (document.querySelector('input[name=csrfmiddlewaretoken]')||{}).value }, credentials:'same-origin' });
+          const data = await res.json().catch(()=>({}));
+          if(!res.ok){
+            alert((data && data.detail) || 'No se pudo procesar el checkout');
+            return;
+          }
+          if(data && (data.detail_url || data.redirect)){
+            window.location = data.detail_url || data.redirect;
+          }
+          else { window.location = '/mis-reservas/'; }
+        }catch(e){ alert('Error de red'); }
+      });
+    })();
+  </script>
+</body>
+</html>

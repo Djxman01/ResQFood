@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Partner, Pack, Order
+from django.contrib.auth import get_user_model
+
 
 class PartnerSerializer(serializers.ModelSerializer):
     imagen_url = serializers.SerializerMethodField()
@@ -37,6 +39,43 @@ class PackSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         url = obj.partner.imagen.url
         return request.build_absolute_uri(url) if request else url
+
+    def validate(self, attrs):
+        # Merge instance values on partial updates to compare effective values
+        instance = getattr(self, "instance", None)
+
+        def get_val(key):
+            if key in attrs:
+                return attrs.get(key)
+            if instance is not None:
+                return getattr(instance, key, None)
+            return None
+
+        pickup_start = get_val("pickup_start")
+        pickup_end = get_val("pickup_end")
+        precio_original = get_val("precio_original")
+        precio_oferta = get_val("precio_oferta")
+
+        errors = {}
+
+        # Time window rule: end must be strictly greater than start
+        if pickup_start is not None and pickup_end is not None:
+            if not (pickup_end > pickup_start):
+                errors["pickup_end"] = "pickup_end must be greater than pickup_start"
+
+        # Price rule: oferta <= original
+        if precio_original is not None and precio_oferta is not None:
+            try:
+                if precio_oferta > precio_original:
+                    errors["precio_oferta"] = "precio_oferta must be <= precio_original"
+            except TypeError:
+                # Let DRF field-level validators handle type/format errors
+                pass
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -77,3 +116,7 @@ class OrderLiteSerializer(serializers.ModelSerializer):
             "pack", "pack_titulo", "partner_nombre", "imagen",
             "pickup_start", "pickup_end"
         ]
+
+
+User = get_user_model()
+

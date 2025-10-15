@@ -1,0 +1,126 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reserva #{{ order.id }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    .wrap { max-width: 900px; margin: 1.25rem auto; padding: 0 1rem; }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; display:grid; grid-template-columns: 1fr 280px; gap:16px; }
+    .muted { color:#6b7280; }
+    .badge { font-size:.75rem; padding:.25rem .5rem; border-radius:.5rem; display:inline-block; margin-top:.25rem; }
+    .b-pend { background:#FEF3C7; color:#92400E; }
+    .b-paga { background:#DBEAFE; color:#1E3A8A; }
+    .b-ret  { background:#DCFCE7; color:#166534; }
+    .b-canc { background:#E5E7EB; color:#374151; }
+    .b-exp  { background:#FEE2E2; color:#991B1B; }
+    .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; cursor:pointer; }
+    img.cover { width:100%; height:180px; object-fit:cover; border-radius:8px; }
+    .qrbox { border:1px dashed #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:12px; }
+  </style>
+  </head>
+<body>
+  <main class="wrap">
+    <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">? Volver</a>
+    <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle del pedido #{{ order.id }}</h1>
+
+    <section class="card">
+      <div>
+        {% if order.pack.imagen %}
+          <img class="cover" src="{{ order.pack.imagen.url }}" alt="{{ order.pack.titulo }}">
+        {% endif %}
+
+        <h2 style="margin:.5rem 0; font-weight:700;">{{ order.pack.titulo }}</h2>
+        <div class="muted">{{ order.pack.partner.nombre }}</div>
+
+        <p class="muted" style="margin-top:.5rem;">
+          <strong>Retiro:</strong>
+          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} –
+          {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
+        </p>
+
+        <p class="muted"><strong>Precio:</strong> ${{ order.precio_pagado|floatformat:2 }}</p>
+
+        {% with es=order.estado %}
+          <span id="estado-badge" class="badge
+            {% if es == 'pendiente' %}b-pend
+            {% elif es == 'pagado' %}b-paga
+            {% elif es == 'retirado' %}b-ret
+            {% elif es == 'cancelado' %}b-canc
+            {% elif es == 'expirado' %}b-exp
+            {% endif %}
+          ">{{ es|upper }}</span>
+        {% endwith %}
+      </div>
+
+      <div>
+        {% if order.estado == 'pagado' %}
+          <div class="qrbox">
+            <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
+          </div>
+          <p class="muted" style="text-align:center; margin-top:.5rem;">
+            Mostrá este código en el comercio para canjear tu pack.
+          </p>
+        {% else %}
+          <div class="qrbox">
+            <span class="muted">El QR aparecerá cuando el pago esté confirmado.</span>
+          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            <button class="btn" id="payNowBtn">Pagar ahora</button>\r\n          </div>\r\n        {% endif %}
+        <p class="muted" style="text-align:center; margin-top:.25rem;">
+          ID de pedido: <strong>#{{ order.id }}</strong>
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+
+
+
+
+
+
+<script>
+  (function(){
+    var btn = document.getElementById('payNowBtn');
+    if(!btn) return;
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    btn.addEventListener('click', async function(){
+      try{
+        const res = await fetch('/api/payments/mp/start/{{ order.id }}/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin'});
+        const data = await res.json();
+        if(!res.ok){ alert(data.detail || 'No se pudo iniciar el pago'); return; }
+        if(data.init_point){ window.location = data.init_point; }
+      }catch(e){ alert('Error de red'); }
+    });
+  })();
+</script>{% if order.estado != 'pagado' %}
+<script>
+  (function(){
+    const orderId = {{ order.id }};
+    let attempts = 0, maxAttempts = 20;
+    const badge = document.getElementById('estado-badge');
+    const payBtn = document.getElementById('payNowBtn');
+    function poll(){
+      fetch(/api/payments/status//, {credentials:'same-origin'})
+        .then(r => r.json())
+        .then(data => {
+          if(badge) badge.textContent = data.order_estado;
+          if(data.order_estado === 'pagado'){
+            if(payBtn) payBtn.disabled = true;
+            return;
+          }
+          if(++attempts < maxAttempts) setTimeout(poll, 3000);
+        })
+        .catch(()=>{ if(++attempts < maxAttempts) setTimeout(poll, 3000); });
+    }
+    poll();
+  })();
+  </script>
+{% endif %}
+
+

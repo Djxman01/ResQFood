@@ -12,7 +12,9 @@ from django.views.generic import CreateView
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from .forms import CustomUserCreationForm
-
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+from django.test import TestCase
 
 
 
@@ -128,3 +130,16 @@ class SignUpView(CreateView):
     form_class = CustomUserCreationForm
     template_name = "registration/signup.html"
     success_url = reverse_lazy("login")  # o reverse_lazy("packs:list")
+
+
+User = get_user_model()
+
+class AccountsTests(TestCase):
+    def test_register_user_ok(self):
+        res = self.client.post(reverse("register"), {
+            "username": "testuser",
+            "password1": "pass1234",
+            "password2": "pass1234"
+        })
+        self.assertEqual(res.status_code, 302)  # redirección post registro
+        self.assertTrue(User.objects.filter(username="testuser").exists())

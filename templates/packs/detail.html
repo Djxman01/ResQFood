@@ -2,16 +2,15 @@
 {% block title %}Detalle del Pack{% endblock %}
 
 {% block content %}
-  <a href="{% url 'packs:list' %}">← Volver</a>
+  <a href="{% url 'packs:list' %}">Volver</a>
 
   <div id="detalle" style="margin-top:1rem;">
-    <p>Cargando…</p>
+    <p>Cargando...</p>
   </div>
 
   <div id="msg" style="margin-top:1rem; color:green; font-weight:bold;"></div>
 
   <script>
-    // Helper CSRF
     function getCookie(name) {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
@@ -45,27 +44,30 @@
           <div id="acciones"></div>
         `;
 
-        // Render del botón (según login/stock)
         const acciones = document.getElementById("acciones");
 
         {% if user.is_authenticated %}
           if (p.stock > 0) {
-            acciones.innerHTML = `<button id="reservarBtn">Reservar</button>`;
-            document.getElementById("reservarBtn").onclick = async () => {
-              const r = await fetch(`/api/packs/${p.id}/reservar/`, {
+            acciones.innerHTML = `<button id="addBtn">Agregar al carrito</button>`;
+            document.getElementById("addBtn").onclick = async () => {
+              const r = await fetch(`/api/cart/add/`, {
                 method: "POST",
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
                 credentials: "same-origin",
+                body: (function(){ const fd=new FormData(); fd.append('pack_id', p.id); return fd; })()
               });
               const data = await r.json().catch(()=>({detail:"Error"}));
+              if (r.status === 401 || r.status === 403) {
+                window.location = `{% url 'login' %}?next=${encodeURIComponent(location.pathname)}`;
+                return;
+              }
               if (r.ok) {
-                document.getElementById("msg").textContent = data.detail || "Reservado ✅";
-                acciones.innerHTML = `<span>Reservado ✅</span>`;
+                document.getElementById("msg").textContent = "Agregado al carrito";
+                if (window.updateCartBadge && typeof data.item_count !== 'undefined') updateCartBadge(data.item_count);
               } else {
-                if (r.status === 401) {
-                  window.location = `/accounts/login/?next=${encodeURIComponent(location.pathname)}`;
-                } else {
-                  alert(data.detail || "Error al reservar");
+                if (data.detail && confirm(data.detail + "\n\nVaciar carrito e intentar de nuevo?")) {
+                  const clr = await fetch('/api/cart/clear/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin' });
+                  if (clr.ok) { return document.getElementById('addBtn').click(); }
                 }
               }
             };
@@ -73,7 +75,7 @@
             acciones.innerHTML = `<span>Sin stock</span>`;
           }
         {% else %}
-          acciones.innerHTML = `<a class="btn" href="{% url 'login' %}?next={{ request.path|urlencode }}">Ingresar para reservar</a>`;
+          acciones.innerHTML = `<a class="btn" href="{% url 'login' %}?next={{ request.path|urlencode }}">Ingresar para agregar al carrito</a>`;
         {% endif %}
       } catch (e) {
         console.error(e);
@@ -84,3 +86,4 @@
     cargarDetalle();
   </script>
 {% endblock %}
+

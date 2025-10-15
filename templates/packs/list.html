@@ -86,9 +86,23 @@
   }
 
   function render(items) {
-    document.getElementById("lista").innerHTML = items.length
-      ? items.map(cardTpl).join("")
-      : "<p>Sin resultados.</p>";
+    const cont = document.getElementById("lista");
+    cont.innerHTML = items.length ? items.map(cardTpl).join("") : "<p>Sin resultados.</p>";
+    // Inyectar botón Agregar al carrito debajo de cada tarjeta
+    cont.querySelectorAll('a[href^="/packs/"]').forEach(a => {
+      const m = a.getAttribute('href').match(/\/packs\/(\d+)\/?/);
+      if(!m) return;
+      const id = parseInt(m[1], 10);
+      const btnWrap = document.createElement('div');
+      btnWrap.style.padding = '12px';
+      btnWrap.style.borderTop = '1px solid #eee';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Agregar al carrito';
+      btn.onclick = () => addToCart(id);
+      btnWrap.appendChild(btn);
+      a.parentElement.appendChild(btnWrap);
+    });
   }
 
   function renderPaginacion(next, prev) {
@@ -145,5 +159,42 @@
   const initialQ = qs.toString();
   currentURL = "/api/packs/?" + (initialQ ? `vigentes=1&${initialQ}` : "vigentes=1");
   cargar(currentURL);
+
+  // CSRF helper + cart add
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+  async function addToCart(packId){
+    try{
+      const res = await fetch('/api/cart/add/', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        credentials: 'same-origin',
+        body: JSON.stringify({ pack_id: packId })
+      });
+      const data = await res.json().catch(()=>({}));
+      if(res.status === 401 || res.status === 403){
+        window.location = '{% url "login" %}?next=' + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+      if(!res.ok){
+        if(data && data.detail){
+          if(confirm(data.detail + '\n\n¿Vaciar carrito e intentar de nuevo?')){
+            const clr = await fetch('/api/cart/clear/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin' });
+            if(clr.ok){ return addToCart(packId); }
+          }
+        }else{
+          alert('No se pudo agregar.');
+        }
+        return;
+      }
+      if(data && typeof data.item_count !== 'undefined'){
+        if(window.updateCartBadge) updateCartBadge(data.item_count);
+      }
+      alert('Agregado al carrito');
+    }catch(e){ alert('Error de red'); }
+  }
 </script>
 {% endblock %}
