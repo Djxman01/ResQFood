@@ -124,3 +124,19 @@ def payment_status(request, order_id: int):
     resp = JsonResponse(data)
     resp["Cache-Control"] = "no-store"
     return resp
+
+
+# Mercado Pago return pages (require login)
+@login_required
+def mp_success(request):
+    return render(request, "payments/return_success.html")
+
+
+@login_required
+def mp_pending(request):
+    return render(request, "payments/return_pending.html")
+
+
+@login_required
+def mp_failure(request):
+    return render(request, "payments/return_failure.html")
