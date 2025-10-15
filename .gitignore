@@ -27,3 +27,8 @@ Thumbs.db
 .env
 .env.*
 *.env
+
+# Coverage and test artifacts
+.coverage
+coverage.xml
+.coveragerc
