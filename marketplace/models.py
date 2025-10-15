@@ -77,6 +77,12 @@ class Order(models.Model):
         CANCELADO = "cancelado", "Cancelado"
         EXPIRADO  = "expirado",  "Expirado"
 
+    METODO_PAGO_CHOICES = [
+        ("mp", "Mercado Pago"),
+        ("efectivo", "Efectivo al retirar"),
+        ("transferencia", "Transferencia bancaria"),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
     pack = models.ForeignKey(Pack, on_delete=models.PROTECT, related_name="orders")
     precio_pagado = models.DecimalField(max_digits=10, decimal_places=2)
@@ -84,6 +90,7 @@ class Order(models.Model):
     creado_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     stock_decremented = models.BooleanField(default=False)
+    metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, default="mp")
 
     def clean(self):
         """

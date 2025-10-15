@@ -176,6 +176,12 @@ MP_BACK_URL_FAILURE = os.getenv("MP_BACK_URL_FAILURE", "http://localhost:8000/pa
 # Webhook verification secret (HMAC). Leave blank in dev.
 MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")
 
+# Bank transfer info (for transfer flow)
+BANK_INFO_ALIAS = os.getenv("BANK_INFO_ALIAS", "mi.empresa.alias")
+BANK_INFO_CBU = os.getenv("BANK_INFO_CBU", "0000000000000000000000")
+BANK_INFO_TITULAR = os.getenv("BANK_INFO_TITULAR", "Mi Empresa SA")
+BANK_INFO_CUIT = os.getenv("BANK_INFO_CUIT", "30-00000000-0")
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",    

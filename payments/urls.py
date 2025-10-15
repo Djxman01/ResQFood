@@ -15,4 +15,11 @@ urlpatterns += [
     path('failure/', views.mp_failure, name='mp_failure'),
 ]
 
+# Payment methods selection + non-MP flows
+urlpatterns += [
+    path('select-method/<int:order_id>/', views.select_payment_method, name='payments_select_method'),
+    path('cash/start/<int:order_id>/', views.cash_start, name='payments_cash_start'),
+    path('transfer/start/<int:order_id>/', views.transfer_start, name='payments_transfer_start'),
+]
+
 # Webhook is mounted at project level as /webhooks/mercadopago/

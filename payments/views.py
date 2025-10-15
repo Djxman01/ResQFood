@@ -146,3 +146,71 @@ def mp_pending(request):
 @login_required
 def mp_failure(request):
     return render(request, "payments/return_failure.html")
+
+
+@login_required
+@require_POST
+def select_payment_method(request, order_id: int):
+    order = get_object_or_404(Order, pk=order_id)
+    if order.user_id != request.user.id:
+        return HttpResponseForbidden("No sos el dueño del pedido")
+    if order.estado != Order.Estado.PENDIENTE:
+        return HttpResponseBadRequest("No podés cambiar el medio de pago en este estado")
+
+    metodo = request.POST.get("metodo_pago")
+    if metodo not in ("mp", "efectivo", "transferencia"):
+        return HttpResponseBadRequest("Medio de pago inválido")
+
+    if order.metodo_pago != metodo:
+        order.metodo_pago = metodo
+        order.save(update_fields=["metodo_pago"])
+
+    return JsonResponse({"ok": True, "metodo_pago": order.metodo_pago}, status=200)
+
+
+@login_required
+@require_POST
+def cash_start(request, order_id: int):
+    order = get_object_or_404(Order, pk=order_id)
+    if order.user_id != request.user.id:
+        return HttpResponseForbidden("No sos el dueño del pedido")
+    if order.estado != Order.Estado.PENDIENTE:
+        return HttpResponseBadRequest("No podés iniciar pago en este estado")
+    if order.metodo_pago != "efectivo":
+        return HttpResponseBadRequest("El método seleccionado no es efectivo")
+
+    pay = Payment.objects.filter(order=order, provider="efectivo").order_by("-created_at").first()
+    if not pay or pay.status != "pending":
+        pay = Payment.objects.create(order=order, provider="efectivo", status="pending")
+
+    return JsonResponse({
+        "ok": True,
+        "provider": "efectivo",
+        "status": pay.status,
+        "message": "Reserva confirmada. Pagás en el retiro.",
+    }, status=200)
+
+
+@login_required
+@require_POST
+def transfer_start(request, order_id: int):
+    order = get_object_or_404(Order, pk=order_id)
+    if order.user_id != request.user.id:
+        return HttpResponseForbidden("No sos el dueño del pedido")
+    if order.estado != Order.Estado.PENDIENTE:
+        return HttpResponseBadRequest("No podés iniciar pago en este estado")
+    if order.metodo_pago != "transferencia":
+        return HttpResponseBadRequest("El método seleccionado no es transferencia")
+
+    pay = Payment.objects.filter(order=order, provider="transferencia").order_by("-created_at").first()
+    if not pay or pay.status != "pending":
+        pay = Payment.objects.create(order=order, provider="transferencia", status="pending")
+
+    bank = {
+        "alias": getattr(settings, "BANK_INFO_ALIAS", ""),
+        "cbu": getattr(settings, "BANK_INFO_CBU", ""),
+        "titular": getattr(settings, "BANK_INFO_TITULAR", ""),
+        "cuit": getattr(settings, "BANK_INFO_CUIT", ""),
+        "importe": None,
+    }
+    return JsonResponse({"ok": True, "provider": "transferencia", "status": pay.status, "bank": bank}, status=200)

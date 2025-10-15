@@ -65,7 +65,28 @@
         {% else %}
           <div class="qrbox">
             <span class="muted">El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</span>
-          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}{% if price %}<button class="btn" id="payNowBtn" data-order-id="{{ order.id }}" {% if order.estado == "pagado" %}disabled{% endif %}>Pagar ahora</button>{% else %}<button class="btn" id="payNowBtn" disabled title="Este pedido no tiene un monto válido para pagar.">Pagar ahora</button>{% endif %}{% endwith %}\r\n          </div>\r\n        {% endif %}
+                    <div id="payment-method-block" style="margin-top:.75rem;">
+            <label style="font-weight:600;">Elegí cómo pagar:</label>
+            <div>
+              <label><input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}> Mercado Pago (tarjeta, efectivo, QR)</label><br>
+              <label><input type="radio" name="metodo_pago" value="efectivo" {% if order.metodo_pago == "efectivo" %}checked{% endif %}> Efectivo al retirar</label><br>
+              <label><input type="radio" name="metodo_pago" value="transferencia" {% if order.metodo_pago == "transferencia" %}checked{% endif %}> Transferencia bancaria</label>
+            </div>
+            <div id="pm-info" style="margin-top:6px; font-size:0.95rem;"></div>
+          </div>
+          <div id="pay-actions" style="margin-top:10px; text-align:center;">
+            {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}{% if price %}
+            <button class="btn" id="payNowBtn" data-order-id="{{ order.id }}" {% if order.estado == 'pagado' %}disabled{% endif %}>Pagar ahora</button>
+            {% else %}
+            <button class="btn" id="payNowBtn" disabled title="Este pedido no tiene un monto válido para pagar.">Pagar ahora</button>
+            {% endif %}{% endwith %}
+            <button class="btn" id="cashConfirmBtn" data-order-id="{{ order.id }}" style="display:none;">Confirmar reserva (pago en efectivo)</button>
+            <button class="btn" id="transferStartBtn" data-order-id="{{ order.id }}" style="display:none;">Ver datos de transferencia</button>
+            <div style="margin-top:6px;">
+              <span id="payLoading" style="display:none;">Procesando…</span>
+              <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
+            </div>
+        {% endif %}
         <p class="muted" style="text-align:center; margin-top:.25rem;">
           ID de pedido: <strong>#{{ order.id }}</strong>
         </p>
@@ -193,3 +214,8 @@
   });
 })();
 </script>
+
+
+
+
+
