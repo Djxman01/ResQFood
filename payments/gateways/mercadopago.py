@@ -94,6 +94,18 @@ def create_mp_preference(order):
 
     resp = sdk.preference().create(pref_body)
     data = resp.get("response", {}) if isinstance(resp, dict) else {}
+    # If Mercado Pago returned an error payload or missing id, surface a clear message
+    if isinstance(resp, dict):
+        status = resp.get("status")
+        if not data.get("id"):
+            mp_msg = ""
+            if isinstance(data, dict):
+                mp_msg = data.get("message") or data.get("error_description") or data.get("error") or ""
+            if status and int(status) >= 400:
+                raise ValueError(mp_msg or f"MercadoPago preference creation failed (status {status})")
+            # No id and no explicit status, still fail clearly
+            if not data.get("id"):
+                raise ValueError(mp_msg or "MercadoPago preference creation failed")
     return {
         "preference_id": data.get("id"),
         "init_point": data.get("init_point"),
