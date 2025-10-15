@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -36,7 +36,7 @@
 
         <p class="muted" style="margin-top:.5rem;">
           <strong>Retiro:</strong>
-          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} –
+          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} â€“
           {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
         </p>
 
@@ -60,17 +60,17 @@
             <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
           </div>
           <p class="muted" style="text-align:center; margin-top:.5rem;">
-            Mostrá este código en el comercio para canjear tu pack.
+            MostrÃ¡ este cÃ³digo en el comercio para canjear tu pack.
           </p>
         {% else %}
           <div class="qrbox">
-            <span class="muted">El QR aparecerá cuando el pago esté confirmado.</span>
-          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            <button class="btn" id="payNowBtn" data-order-id="{{ order.id }}">Pagar ahora</button>\r\n          </div>\r\n        {% endif %}
+            <span class="muted">El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</span>
+          </div>\r\n          <div style="text-align:center; margin-top:.75rem;">\r\n            {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}{% if price %}<button class="btn" id="payNowBtn" data-order-id="{{ order.id }}" {% if order.estado == "pagado" %}disabled{% endif %}>Pagar ahora</button>{% else %}<button class="btn" id="payNowBtn" disabled title="Este pedido no tiene un monto válido para pagar.">Pagar ahora</button>{% endif %}{% endwith %}\r\n          </div>\r\n        {% endif %}
         <p class="muted" style="text-align:center; margin-top:.25rem;">
           ID de pedido: <strong>#{{ order.id }}</strong>
         </p>
         <div style="text-align:center;">
-          <span id="payLoading" style="display:none;">Iniciando pago…</span>
+          <span id="payLoading" style="display:none;">Iniciando pagoâ€¦</span>
           <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
         </div>
       </div>
@@ -163,16 +163,16 @@
 
       const data = await resp.json();
       if (!data.init_point) {
-        throw new Error('No se recibió init_point desde el servidor.');
+        throw new Error('No se recibiÃ³ init_point desde el servidor.');
       }
 
       window.location.href = data.init_point;
     } catch (e) {
       if (err) {
-        err.textContent = e && e.message ? e.message : 'Error en la red. Intentá nuevamente.';
+        err.textContent = e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.';
         err.style.display = 'block';
       } else {
-        alert(e && e.message ? e.message : 'Error en la red. Intentá nuevamente.');
+        alert(e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.');
       }
       btn.disabled = false;
     } finally {

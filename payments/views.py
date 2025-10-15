@@ -1,11 +1,11 @@
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed, Http404, HttpResponseServerError
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed, Http404, HttpResponseServerError, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render, redirect
 from django.db import transaction
 from django.utils import timezone
 import uuid
-
+import logging
 from marketplace.models import Order
 from .models import Payment
 from django.urls import reverse
@@ -39,8 +39,14 @@ def mp_start(request, order_id: int):
             return HttpResponseServerError("MercadoPago init_point missing")
         payment = Payment.objects.create(order=order, provider='mp', preference_id=preference_id, status='pending')
         return JsonResponse({"init_point": init_point, "preference_id": preference_id, "payment_id": payment.id})
-    except Exception:
-        return HttpResponseServerError("Payment service temporarily unavailable")
+    except ValueError as e:
+        return HttpResponseBadRequest(str(e))
+    except Exception as e:
+        logging.getLogger(__name__).exception("MP start failed")
+        msg = "Payment service temporarily unavailable"
+        if getattr(settings, "DEBUG", False):
+            msg = f"Payment service error: {e}"
+        return HttpResponseServerError(msg)
 
 
 @require_POST
