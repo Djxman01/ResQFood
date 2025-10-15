@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "marketplace",
     "accounts",
     "packs",
+    "payments",
 
     # Django admin
     "django.contrib.admin",
@@ -80,6 +81,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'marketplace.context_processors.cart_badge',
             ],
         },
     },
@@ -159,6 +161,20 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 12,
 }
 
+
+# Payments feature flags / config
+PAYMENTS_USE_LOCAL_MOCK = os.getenv("PAYMENTS_USE_LOCAL_MOCK", "true").lower() == "true"
+
+# Mercado Pago configuration (used when not using local mock)
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
+MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "")
+MP_NOTIFICATION_URL = os.getenv("MP_NOTIFICATION_URL", "https://example.com/webhooks/mercadopago/")
+MP_BACK_URL_SUCCESS = os.getenv("MP_BACK_URL_SUCCESS", "http://localhost:8000/payments/success/")
+MP_BACK_URL_PENDING = os.getenv("MP_BACK_URL_PENDING", "http://localhost:8000/payments/pending/")
+MP_BACK_URL_FAILURE = os.getenv("MP_BACK_URL_FAILURE", "http://localhost:8000/payments/failure/")
+
+# Webhook verification secret (HMAC). Leave blank in dev.
+MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
