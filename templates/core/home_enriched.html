@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<style>
+  .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
+  .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
+  .grid-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 640px) { .grid-tiles { grid-template-columns: repeat(4, 1fr);} }
+  @media (min-width: 1024px){ .grid-tiles { grid-template-columns: repeat(8, 1fr);} }
+  .tile { display:flex; align-items:center; justify-content:center; flex-direction:column; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; text-align:center; transition: transform .15s ease, box-shadow .15s ease; text-decoration: none; color: inherit; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+  .tile .icon { font-size: 1.6rem; }
+  .tile .t { margin-top:8px; font-weight:600; font-size:.95rem; color:#111827; }
+
+  .grid-cards { display:grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 768px){ .grid-cards { grid-template-columns: repeat(3, 1fr);} }
+  @media (min-width: 1100px){ .grid-cards { grid-template-columns: repeat(4, 1fr);} }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; transition: box-shadow .15s ease, transform .15s ease; text-decoration:none; color:inherit; }
+  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); transform: translateY(-2px); }
+  .thumb { aspect-ratio: 4/3; background:#f3f4f6; display:block; width:100%; object-fit:cover; }
+  .card-body { padding: 10px 12px; }
+  .title { font-weight: 600; font-size: .98rem; color:#111827; margin:0 0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .meta { color:#6b7280; font-size:.88rem; display:flex; justify-content:space-between; }
+  .price { font-weight:700; color:#111827; }
+  .price s { color:#9ca3af; font-weight:500; margin-left:6px; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .see-all { color:#2563eb; font-weight:600; font-size:.9rem; text-decoration:none; }
+</style>
+
+<!-- Categorías -->
+<section class="section">
+  <div class="section-header">
+    <h2>Explorar categorías</h2>
+    <a class="see-all" href="/packs/">Ver todo</a>
+  </div>
+  <div class="grid-tiles">
+    {% for c in categories %}
+      <a class="tile" href="/packs/?categoria={{ c.slug }}">
+        <div class="icon">{{ c.icon }}</div>
+        <div class="t">{{ c.title }}</div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Lo más nuevo -->
+<section class="section">
+  <div class="section-header">
+    <h2>Lo más nuevo</h2>
+    <a class="see-all" href="/packs/?orden=nuevo">Ver más</a>
+  </div>
+  <div class="grid-cards">
+    {% for p in newest %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        {% if p.imagen %}
+          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
+        {% else %}
+          <div class="thumb"></div>
+        {% endif %}
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta">
+            <span class="price">
+              ${{ p.precio_oferta|default:p.precio_original }}
+              {% if p.precio_oferta and p.precio_oferta < p.precio_original %}
+                <s>${{ p.precio_original }}</s>
+              {% endif %}
+            </span>
+            <span>{{ p.partner.nombre|default:"" }}</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="muted">Sin novedades por ahora.</div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Lo más comprado -->
+<section class="section">
+  <div class="section-header">
+    <h2>Lo más comprado</h2>
+    <a class="see-all" href="/packs/?orden=mas-comprado">Ver más</a>
+  </div>
+  <div class="grid-cards">
+    {% for p in most_bought %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        {% if p.imagen %}
+          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
+        {% else %}<div class="thumb"></div>{% endif %}
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta">
+            <span class="price">${{ p.precio_oferta|default:p.precio_original }}</span>
+            <span>{{ p.n|default:0 }} ventas</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="muted">Aún no hay más comprados.</div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Ofertas -->
+<section class="section">
+  <div class="section-header">
+    <h2>Ofertas</h2>
+    <a class="see-all" href="/packs/?filtro=ofertas">Ver más</a>
+  </div>
+  <div class="grid-cards">
+    {% for p in offers %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        {% if p.imagen %}
+          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
+        {% else %}<div class="thumb"></div>{% endif %}
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta">
+            <span class="price">
+              ${{ p.precio_oferta }} <s>${{ p.precio_original }}</s>
+            </span>
+            <span>{{ p.partner.nombre|default:"" }}</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="muted">No hay ofertas activas en este momento.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
