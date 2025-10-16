@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -17,12 +17,25 @@
     .b-exp  { background:#FEE2E2; color:#991B1B; }
     .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; cursor:pointer; }
     img.cover { width:100%; height:180px; object-fit:cover; border-radius:8px; }
-    .qrbox { border:1px dashed #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:12px; }
+
+    /* New payment card styles */
+    .pay-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; background: #fff; display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
+    .pay-left { color: #374151; font-size: 0.95rem; }
+    .pay-left strong { display: block; margin-bottom: 4px; }
+    .pay-right h4 { margin: 0 0 8px; font-size: 1.05rem; }
+    .pm-option { display: flex; align-items: start; gap: 8px; margin: 6px 0; }
+    .pm-option input { margin-top: 3px; }
+    .pm-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .btn-primary { appearance: none; border: 1px solid #2563eb; background: #2563eb; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s ease; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary[disabled] { opacity: 0.6; cursor: not-allowed; }
+    .badge-id { color: #6b7280; font-size: 0.9rem; }
+    @media (max-width: 600px) { .pay-card { grid-template-columns: 1fr; } }
   </style>
   </head>
 <body>
   <main class="wrap">
-    <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">? Volver</a>
+    <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">← Volver</a>
     <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle del pedido #{{ order.id }}</h1>
 
     <section class="card">
@@ -36,8 +49,7 @@
 
         <p class="muted" style="margin-top:.5rem;">
           <strong>Retiro:</strong>
-          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} â€“
-          {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
+          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} – {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
         </p>
 
         <p class="muted"><strong>Precio:</strong> ${{ order.precio_pagado|floatformat:2 }}</p>
@@ -56,67 +68,52 @@
 
       <div>
         {% if order.estado == 'pagado' %}
-          <div class="qrbox">
+          <div style="border:1px dashed #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:12px;">
             <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
           </div>
           <p class="muted" style="text-align:center; margin-top:.5rem;">
-            MostrÃ¡ este cÃ³digo en el comercio para canjear tu pack.
+            Mostrá este código en el comercio para canjear tu pack.
           </p>
         {% else %}
-          <div class="qrbox">
-            <span class="muted">El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</span>
-                    <div id="payment-method-block" style="margin-top:.75rem;">
-            <label style="font-weight:600;">Elegí cómo pagar:</label>
-            <div>
-              <label><input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}> Mercado Pago (tarjeta, efectivo, QR)</label><br>
-              <label><input type="radio" name="metodo_pago" value="efectivo" {% if order.metodo_pago == "efectivo" %}checked{% endif %}> Efectivo al retirar</label><br>
-              <label><input type="radio" name="metodo_pago" value="transferencia" {% if order.metodo_pago == "transferencia" %}checked{% endif %}> Transferencia bancaria</label>
+          <div class="pay-card">
+            <div class="pay-left">
+              <strong>El QR aparecerá cuando el pago esté confirmado.</strong>
+              <div class="muted">Usá Mercado Pago, efectivo o transferencia.</div>
             </div>
-            <div id="pm-info" style="margin-top:6px; font-size:0.95rem;"></div>
+            <div class="pay-right">
+              <h4>Elegí cómo pagar:</h4>
+              <label class="pm-option">
+                <input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}>
+                <span>Mercado Pago (tarjeta, efectivo, QR)</span>
+              </label>
+              <label class="pm-option">
+                <input type="radio" name="metodo_pago" value="efectivo" {% if order.metodo_pago == "efectivo" %}checked{% endif %}>
+                <span>Efectivo al retirar</span>
+              </label>
+              <label class="pm-option">
+                <input type="radio" name="metodo_pago" value="transferencia" {% if order.metodo_pago == "transferencia" %}checked{% endif %}>
+                <span>Transferencia bancaria</span>
+              </label>
+              <div class="pm-actions">
+                {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}
+                <button id="payNowBtn" class="btn-primary" data-order-id="{{ order.id }}" {% if order.estado == 'pagado' or not price %}disabled{% endif %}>Pagar ahora</button>
+                {% endwith %}
+                <button id="cashConfirmBtn" class="btn-primary" style="display:none;" data-order-id="{{ order.id }}">Confirmar reserva (efectivo)</button>
+                <button id="transferStartBtn" class="btn-primary" style="display:none;" data-order-id="{{ order.id }}">Ver datos de transferencia</button>
+                <span id="payLoading" class="muted" style="display:none;">Procesando…</span>
+                <div id="payError" class="muted" style="display:none;color:#b00020;" aria-live="polite"></div>
+                <span class="badge-id">ID de pedido: #{{ order.id }}</span>
+              </div>
+            </div>
           </div>
-          <div id="pay-actions" style="margin-top:10px; text-align:center;">
-            {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}{% if price %}
-            <button class="btn" id="payNowBtn" data-order-id="{{ order.id }}" {% if order.estado == 'pagado' %}disabled{% endif %}>Pagar ahora</button>
-            {% else %}
-            <button class="btn" id="payNowBtn" disabled title="Este pedido no tiene un monto válido para pagar.">Pagar ahora</button>
-            {% endif %}{% endwith %}
-            <button class="btn" id="cashConfirmBtn" data-order-id="{{ order.id }}" style="display:none;">Confirmar reserva (pago en efectivo)</button>
-            <button class="btn" id="transferStartBtn" data-order-id="{{ order.id }}" style="display:none;">Ver datos de transferencia</button>
-            <div style="margin-top:6px;">
-              <span id="payLoading" style="display:none;">Procesando…</span>
-              <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
-            </div>
         {% endif %}
-        <p class="muted" style="text-align:center; margin-top:.25rem;">
-          ID de pedido: <strong>#{{ order.id }}</strong>
-        </p>
-        <div style="text-align:center;">
-          <span id="payLoading" style="display:none;">Iniciando pagoâ€¦</span>
-          <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
-        </div>
       </div>
     </section>
   </main>
 </body>
 </html>
 
-
-
-
-
-
-<script>
-  (function(){
-    var btn = document.getElementById('payNowBtn');
-    if(!btn) return;
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-    // replaced by enhanced handler below
-  })();
-</script>{% if order.estado != 'pagado' %}
+{% if order.estado != 'pagado' %}
 <script>
   (function(){
     const orderId = {{ order.id }};
@@ -124,7 +121,7 @@
     const badge = document.getElementById('estado-badge');
     const payBtn = document.getElementById('payNowBtn');
     function poll(){
-      fetch(/api/payments/status//, {credentials:'same-origin'})
+      fetch('/api/payments/status/' + orderId + '/', {credentials:'same-origin'})
         .then(r => r.json())
         .then(data => {
           if(badge) badge.textContent = data.order_estado;
@@ -138,9 +135,8 @@
     }
     poll();
   })();
-  </script>
+</script>
 {% endif %}
-
 
 <script>
 (function () {
@@ -153,48 +149,58 @@
   const spinner = document.getElementById('payLoading');
   const err = document.getElementById('payError');
   const badge = document.getElementById('estado-badge');
+  const cashBtn = document.getElementById('cashConfirmBtn');
+  const trBtn = document.getElementById('transferStartBtn');
 
   if (!btn) return;
 
-  let inFlight = false;
+  // Toggle actions based on selected method
+  function showActions(method){
+    if(!cashBtn || !trBtn) return;
+    cashBtn.style.display = (method === 'efectivo') ? 'inline-block' : 'none';
+    trBtn.style.display = (method === 'transferencia') ? 'inline-block' : 'none';
+    btn.style.display = (method === 'mp') ? 'inline-block' : 'none';
+  }
+  document.querySelectorAll('input[name="metodo_pago"]').forEach(r => {
+    r.addEventListener('change', async (e) => {
+      const method = e.target.value;
+      showActions(method);
+      try{
+        await fetch(`/api/payments/select-method/${btn.getAttribute('data-order-id')}/`, {
+          method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')},
+          body: new URLSearchParams({metodo_pago: method})
+        });
+      }catch(_){/* ignore */}
+    });
+  });
 
+  // Initialize visible action
+  const checked = document.querySelector('input[name="metodo_pago"]:checked');
+  if(checked) showActions(checked.value);
+
+  let inFlight = false;
   async function startPayment(orderId) {
     if (inFlight) return;
     inFlight = true;
-
     if (err) err.style.display = 'none';
     if (spinner) spinner.style.display = 'inline';
     btn.disabled = true;
     btn.setAttribute('aria-busy', 'true');
-
     try {
       const resp = await fetch(`/api/payments/mp/start/${orderId}/`, {
         method: 'POST',
-        headers: {
-          'X-CSRFToken': getCookie('csrftoken'),
-          'Accept': 'application/json'
-        },
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Accept': 'application/json' },
         credentials: 'same-origin'
       });
-
       if (!resp.ok) {
         const text = await resp.text();
         throw new Error(`No se pudo iniciar el pago (${resp.status}). ${text || ''}`);
       }
-
       const data = await resp.json();
-      if (!data.init_point) {
-        throw new Error('No se recibiÃ³ init_point desde el servidor.');
-      }
-
+      if (!data.init_point) throw new Error('No se recibió init_point desde el servidor.');
       window.location.href = data.init_point;
     } catch (e) {
-      if (err) {
-        err.textContent = e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.';
-        err.style.display = 'block';
-      } else {
-        alert(e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.');
-      }
+      if (err) { err.textContent = e && e.message ? e.message : 'Error en la red. Intentá nuevamente.'; err.style.display = 'block'; }
       btn.disabled = false;
     } finally {
       if (spinner) spinner.style.display = 'none';
@@ -202,20 +208,35 @@
       inFlight = false;
     }
   }
-
   btn.addEventListener('click', function () {
     const orderId = this.getAttribute('data-order-id');
     if (!orderId) return;
-    if (badge && badge.textContent.trim().toLowerCase() === 'pagado') {
-      this.disabled = true;
-      return;
-    }
+    if (badge && badge.textContent.trim().toLowerCase() === 'pagado') { this.disabled = true; return; }
     startPayment(orderId);
+  });
+
+  cashBtn && cashBtn.addEventListener('click', async () => {
+    if (spinner) spinner.style.display = 'inline';
+    if (err) err.style.display = 'none';
+    try {
+      const resp = await fetch(`/api/payments/cash/start/${btn.getAttribute('data-order-id')}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
+      if (!resp.ok) throw new Error(await resp.text());
+      alert('Reserva confirmada. Pagás en efectivo al retirar.');
+    } catch(ex){ if(err){ err.textContent = ex.message || 'No se pudo confirmar la reserva en efectivo.'; err.style.display='block'; } }
+    finally { if (spinner) spinner.style.display = 'none'; }
+  });
+
+  trBtn && trBtn.addEventListener('click', async () => {
+    if (spinner) spinner.style.display = 'inline';
+    if (err) err.style.display = 'none';
+    try {
+      const resp = await fetch(`/api/payments/transfer/start/${btn.getAttribute('data-order-id')}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
+      if (!resp.ok) throw new Error(await resp.text());
+      const data = await resp.json();
+      const b = data.bank || {};
+      alert(`Datos para transferir:\nTitular: ${b.titular}\nCUIT: ${b.cuit}\nAlias: ${b.alias}\nCBU: ${b.cbu}`);
+    } catch(ex){ if(err){ err.textContent = ex.message || 'No se pudo iniciar el flujo de transferencia.'; err.style.display='block'; } }
+    finally { if (spinner) spinner.style.display = 'none'; }
   });
 })();
 </script>
-
-
-
-
-
