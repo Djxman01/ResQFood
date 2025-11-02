@@ -1,4 +1,5 @@
 from django.views.decorators.http import require_POST, require_GET
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed, Http404, HttpResponseServerError, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render, redirect
@@ -214,3 +215,20 @@ def transfer_start(request, order_id: int):
         "importe": None,
     }
     return JsonResponse({"ok": True, "provider": "transferencia", "status": pay.status, "bank": bank}, status=200)
+
+
+@staff_member_required
+@require_POST
+def mark_payment_approved(request, payment_id: int):
+    pay = get_object_or_404(Payment, pk=payment_id)
+    try:
+        changed = pay.mark_approved_manual()
+        return JsonResponse({
+            "ok": True,
+            "payment_id": pay.id,
+            "order_id": pay.order_id,
+            "status": pay.status,
+            "changed": bool(changed),
+        })
+    except Exception as e:
+        return HttpResponseBadRequest(f"Error: {e}")

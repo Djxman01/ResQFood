@@ -48,6 +48,20 @@ class Payment(models.Model):
         self.save(update_fields=["status", "paid_at"])
         return True
 
+    def mark_approved_manual(self):
+        """
+        Marca el pago como aprobado de manera idempotente y actualiza la orden.
+        Útil para efectivo/transferencia o ajustes manuales.
+        """
+        changed = self.apply_status("approved")
+        # Idempotente sobre la orden
+        try:
+            if self.order:
+                self.order.mark_paid()
+        except Exception:
+            pass
+        return changed
+
 
 class WebhookLog(models.Model):
     request_id = models.CharField(max_length=128, unique=True)
