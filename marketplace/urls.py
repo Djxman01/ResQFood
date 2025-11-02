@@ -1,7 +1,7 @@
 # marketplace/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PartnerViewSet, PackViewSet, OrderViewSet, MisReservasView,OrderDetailView, order_qr_view, partner_redeem_page, CartViewSet, cart_page, merchant_detail
+from .views import PartnerViewSet, PackViewSet, OrderViewSet, MisReservasView,OrderDetailView, order_qr_view, partner_redeem_page, CartViewSet, cart_page, merchant_detail, my_orders
 
 
 router = DefaultRouter()
@@ -13,6 +13,7 @@ router.register(r'cart',     CartViewSet, basename='cart')
 urlpatterns = [
     path('api/', include(router.urls)),
     path('mis-reservas/', MisReservasView.as_view(), name='mis_reservas'),
+    path('mis-pedidos/', my_orders, name='my_orders'),
     path('orders/<int:pk>/', OrderDetailView.as_view(), name='order_detail_public'),
     path('cart/', cart_page, name='cart'),
     path('merchant/<slug:slug>/', merchant_detail, name='merchant_detail'),

@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, decorators, response, status, filters
+﻿from rest_framework import viewsets, permissions, decorators, response, status, filters
 from .models import Partner, Pack, Order
 from .serializers import PartnerSerializer, PackSerializer, OrderSerializer
 from .models_cart import Cart, CartItem
@@ -23,6 +23,9 @@ from io import BytesIO
 import qrcode
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q, Max
 
 class PartnerViewSet(viewsets.ModelViewSet):
     queryset = Partner.objects.all()
@@ -52,22 +55,22 @@ class PackViewSet(viewsets.ModelViewSet):
         now = timezone.now()
 
         with transaction.atomic():
-            # Lock de fila para evitar reservas simultáneas
+            # Lock de fila para evitar reservas simultÃ¡neas
             pack = Pack.objects.select_for_update().get(pk=pk)
 
             # Ventana de retiro y disponibilidad
             if pack.stock <= 0:
                 return Response({"detail": "Sin stock disponible."}, status=status.HTTP_409_CONFLICT)
-           # Permitimos reservar antes; solo bloqueamos si ya pasó la ventana
+           # Permitimos reservar antes; solo bloqueamos si ya pasÃ³ la ventana
             if now > pack.pickup_end:
-                return Response({"detail": "La franja de retiro ya expiró."}, status=status.HTTP_409_CONFLICT)
+                return Response({"detail": "La franja de retiro ya expirÃ³."}, status=status.HTTP_409_CONFLICT)
 
 
             # Evitar duplicadas
             if Order.objects.filter(user=user, pack=pack, estado__in=[Order.Estado.PENDIENTE, Order.Estado.PAGADO]).exists():
                 return Response({"detail": "Ya reservaste este pack."}, status=status.HTTP_409_CONFLICT)
 
-            # Crear la orden (Order.save() validará y descontará stock atómicamente)
+            # Crear la orden (Order.save() validarÃ¡ y descontarÃ¡ stock atÃ³micamente)
             try:
                 order = Order.objects.create(
                     user=user,
@@ -83,7 +86,7 @@ class PackViewSet(viewsets.ModelViewSet):
             pack.refresh_from_db(fields=["stock"])
 
             return Response(
-                {"detail": "Pack reservado ✅", "order_id": order.id, "nuevo_stock": pack.stock},
+                {"detail": "Pack reservado âœ…", "order_id": order.id, "nuevo_stock": pack.stock},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -94,9 +97,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Por defecto, cada usuario ve sus propias órdenes.
-        # Para la acción 'redeem' necesitamos poder acceder por pk sin filtrar por usuario
-        # para que luego el propio método valide ownership y franja.
+        # Por defecto, cada usuario ve sus propias Ã³rdenes.
+        # Para la acciÃ³n 'redeem' necesitamos poder acceder por pk sin filtrar por usuario
+        # para que luego el propio mÃ©todo valide ownership y franja.
         qs = super().get_queryset()
         if getattr(self, "action", None) == "redeem":
             return qs
@@ -116,7 +119,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         Validaciones:
         - El usuario autenticado debe ser owner del partner del pack.
         - El horario actual debe estar dentro de la ventana pickup_start/pickup_end.
-        - La orden debe estar PENDIENTE o PAGADO y el pack tener stock “consumido” (ya manejado al crear).
+        - La orden debe estar PENDIENTE o PAGADO y el pack tener stock â€œconsumidoâ€ (ya manejado al crear).
         """
         try:
             order = (Order.objects
@@ -130,7 +133,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         # Verificar que el partner pertenece a este usuario
         if partner.owner_id != request.user.id:
-            return response.Response({"detail": "No sos el dueño de este comercio."}, status=status.HTTP_403_FORBIDDEN)
+            return response.Response({"detail": "No sos el dueÃ±o de este comercio."}, status=status.HTTP_403_FORBIDDEN)
 
         now = timezone.now()
         if now < pack.pickup_start or now > pack.pickup_end:
@@ -143,7 +146,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         order.estado = Order.Estado.RETIRADO
         order.save(update_fields=["estado"])
-        return response.Response({"detail": "Orden marcada como RETIRADA ✅"}, status=status.HTTP_200_OK)
+        return response.Response({"detail": "Orden marcada como RETIRADA âœ…"}, status=status.HTTP_200_OK)
 
     @decorators.action(detail=False, methods=["post"], url_path="verify-qr", permission_classes=[permissions.IsAuthenticated])
     def verify_qr(self, request):
@@ -157,7 +160,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                      .select_related("pack", "pack__partner")
                      .get(pk=order_id))
         except Exception:
-            return response.Response({"detail": "Token inválido o orden inexistente."}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response({"detail": "Token invÃ¡lido o orden inexistente."}, status=status.HTTP_400_BAD_REQUEST)
 
         data = {
             "order_id": order.id,
@@ -171,21 +174,21 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=["post"],
-        url_path="cancel",          # <-- ruta explícita
+        url_path="cancel",          # <-- ruta explÃ­cita
         permission_classes=[permissions.IsAuthenticated]
     )
     
     def cancel(self, request, pk=None):
         order = self.get_object()
         if order.user_id != request.user.id:
-            return response.Response({"detail": "No podés cancelar una orden de otro usuario."}, status=status.HTTP_403_FORBIDDEN)
+            return response.Response({"detail": "No podÃ©s cancelar una orden de otro usuario."}, status=status.HTTP_403_FORBIDDEN)
 
         if order.estado not in [Order.Estado.PENDIENTE, Order.Estado.PAGADO]:
             return response.Response({"detail": f"No se puede cancelar una orden en estado {order.estado}."}, status=status.HTTP_400_BAD_REQUEST)
 
         now = timezone.now()
         if now > order.pack.pickup_end:
-            return response.Response({"detail": "La franja ya expiró, no se puede cancelar."}, status=status.HTTP_409_CONFLICT)
+            return response.Response({"detail": "La franja ya expirÃ³, no se puede cancelar."}, status=status.HTTP_409_CONFLICT)
 
         with transaction.atomic():
             # Cambiar estado
@@ -194,7 +197,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             # Devolver stock
             type(order.pack).objects.filter(pk=order.pack_id).update(stock=F("stock") + 1)
 
-        return response.Response({"detail": "Orden cancelada y stock devuelto ✅"}, status=status.HTTP_200_OK)
+        return response.Response({"detail": "Orden cancelada y stock devuelto âœ…"}, status=status.HTTP_200_OK)
     
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class MisReservasView(LoginRequiredMixin, ListView):
@@ -203,7 +206,7 @@ class MisReservasView(LoginRequiredMixin, ListView):
     paginate_by = 12  # opcional
 
     def get_queryset(self):
-        # Lo mismo que la API: solo mis órdenes, con joins del pack/partner
+        # Lo mismo que la API: solo mis Ã³rdenes, con joins del pack/partner
         return (
             Order.objects
             .select_related("pack", "pack__partner")
@@ -214,7 +217,7 @@ class MisReservasView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["now"] = timezone.now()
-        return ctx
+        return ctxx
     
    
 class OrderDetailView(LoginRequiredMixin, DetailView):
@@ -223,7 +226,7 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
     model = Order
 
     def get_queryset(self):
-        # Solo dejo ver órdenes del usuario autenticado
+        # Solo dejo ver Ã³rdenes del usuario autenticado
         return (Order.objects
                 .select_related("pack", "pack__partner")
                 .filter(user=self.request.user))
@@ -247,7 +250,58 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
             }
         return ctx
 
-# --- endpoint que devuelve el PNG del QR (solo dueño) ---
+
+@login_required
+def my_orders(request):
+    user = request.user
+    qs = (Order.objects.select_related("pack", "pack__partner")
+          .filter(user=user))
+
+    estado = (request.GET.get("estado") or "").strip()
+    metodo = (request.GET.get("metodo") or "").strip()
+    orden = (request.GET.get("orden") or "reciente").strip()
+
+    if estado in ("pendiente", "pagado", "retirado", "cancelado"):
+        qs = qs.filter(estado=estado)
+    if metodo in ("mp", "efectivo", "transferencia"):
+        qs = qs.filter(metodo_pago=metodo)
+
+    if orden == "monto-asc":
+        qs = qs.order_by("precio_pagado", "-creado_at")
+    elif orden == "monto-desc":
+        qs = qs.order_by("-precio_pagado", "-creado_at")
+    else:
+        qs = qs.order_by("-creado_at")
+
+    page = Paginator(qs, 24).get_page(request.GET.get("page"))
+
+    order_ids = [o.id for o in page.object_list]
+    last_map = {}
+    if order_ids:
+        from payments.models import Payment
+        latest = (Payment.objects
+                  .filter(order_id__in=order_ids)
+                  .values("order_id")
+                  .annotate(last_created=Max("created_at")))
+        keys = {(x["order_id"], x["last_created"]) for x in latest}
+        if keys:
+            pays = Payment.objects.filter(
+                Q(order_id__in=order_ids) & Q(created_at__in=[t[1] for t in keys])
+            )
+            for p in pays:
+                last_map[p.order_id] = p
+    for o in page.object_list:
+        o.last_payment = last_map.get(o.id)
+
+    ctx = {
+        "page": page,
+        "filter_estado": estado,
+        "filter_metodo": metodo,
+        "orden": orden,
+    }
+    return render(request, "marketplace/my_orders.html", ctx)
+
+# --- endpoint que devuelve el PNG del QR (solo dueÃ±o) ---
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
@@ -263,7 +317,7 @@ def order_qr_view(request, pk: int):
         raise Http404("Orden no encontrada")
 
     # Payload firmado (para evitar manipulaciones)
-    # Podés incluir más campos si querés
+    # PodÃ©s incluir mÃ¡s campos si querÃ©s
     payload = {"order_id": order.id, "pack_id": order.pack_id}
     signed = signing.dumps(payload)  # incluye firma y timestamp
 
@@ -322,7 +376,7 @@ class CartViewSet(viewsets.ViewSet):
             created = True
         data = cart.to_dict()
         if not created:
-            data["detail"] = "Ya está en el carrito"
+            data["detail"] = "Ya estÃ¡ en el carrito"
         return response.Response(data)
 
     @decorators.action(detail=False, methods=["post"], url_path="remove")
@@ -345,7 +399,7 @@ class CartViewSet(viewsets.ViewSet):
         cart = self._get_or_create_cart(request)
         items = list(cart.items)
         if not items:
-            return response.Response({"detail": "El carrito está vacío"}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response({"detail": "El carrito estÃ¡ vacÃ­o"}, status=status.HTTP_400_BAD_REQUEST)
 
         pack_ids = [it.pack_id for it in items]
         with transaction.atomic():
@@ -370,7 +424,7 @@ class CartViewSet(viewsets.ViewSet):
                 if not p:
                     return response.Response({"detail": f"Pack {it.pack_id} inexistente"}, status=status.HTTP_400_BAD_REQUEST)
                 if not (p.stock > 0 and p.pickup_start <= now <= p.pickup_end):
-                    return response.Response({"detail": f"{p.titulo} ya no está disponible"}, status=status.HTTP_400_BAD_REQUEST)
+                    return response.Response({"detail": f"{p.titulo} ya no estÃ¡ disponible"}, status=status.HTTP_400_BAD_REQUEST)
                 starts.append(p.pickup_start)
                 ends.append(p.pickup_end)
             start_max = max(starts)
