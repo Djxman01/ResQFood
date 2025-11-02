@@ -26,6 +26,8 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Max
+from django.http import Http404
+from django.db.models import F, Count
 
 class PartnerViewSet(viewsets.ModelViewSet):
     queryset = Partner.objects.all()
@@ -300,6 +302,60 @@ def my_orders(request):
         "orden": orden,
     }
     return render(request, "marketplace/my_orders.html", ctx)
+
+
+def partner_detail(request, slug_or_id):
+    now = timezone.now()
+    partner = None
+    try:
+        partner = Partner.objects.get(slug=slug_or_id)
+    except Partner.DoesNotExist:
+        if str(slug_or_id).isdigit():
+            partner = get_object_or_404(Partner, id=int(slug_or_id))
+        else:
+            raise Http404("Comercio no encontrado")
+
+    qs = Pack.objects.filter(partner=partner)
+
+    oferta = (request.GET.get("oferta") == "1")
+    stock = (request.GET.get("stock") == "1")
+    abierto = (request.GET.get("abierto") == "1")
+
+    if oferta:
+        qs = qs.filter(precio_oferta__lt=F("precio_original"))
+    if stock:
+        qs = qs.filter(stock__gt=0)
+    if abierto:
+        qs = qs.filter(pickup_start__lte=now, pickup_end__gte=now)
+
+    orden = (request.GET.get("orden") or "nuevo").strip()
+    if orden == "precio-asc":
+        qs = qs.order_by(F("precio_oferta").asc(nulls_last=True), F("precio_original").asc(nulls_last=True), "-creado_at")
+    elif orden == "precio-desc":
+        qs = qs.order_by(F("precio_oferta").desc(nulls_last=True), F("precio_original").desc(nulls_last=True), "-creado_at")
+    elif orden == "mas-comprado":
+        qs = qs.annotate(n=Count("orders")).order_by("-n", "-creado_at")
+    else:
+        qs = qs.order_by("-creado_at")
+
+    page = Paginator(qs, 24).get_page(request.GET.get("page"))
+
+    is_open = qs.filter(pickup_start__lte=now, pickup_end__gte=now).exists()
+    meta_title = f"{partner.nombre} — ResQFood"
+    meta_desc = f"Ofertas y packs de {partner.nombre}. Retiro en local. Ver promociones, horarios y disponibilidad."
+
+    ctx = {
+        "partner": partner,
+        "page": page,
+        "f_oferta": oferta,
+        "f_stock": stock,
+        "f_abierto": abierto,
+        "orden": orden,
+        "meta_title": meta_title,
+        "meta_desc": meta_desc,
+        "is_open": is_open,
+    }
+    return render(request, "marketplace/partner_detail.html", ctx)
 
 # --- endpoint que devuelve el PNG del QR (solo dueÃ±o) ---
 from django.utils.decorators import method_decorator
