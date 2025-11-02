@@ -5,6 +5,58 @@
 
 {% block content %}
 <style>
+  .filters { max-width:1100px; margin: 8px auto 16px; padding: 0 16px; }
+  .pills { display:flex; gap:8px; flex-wrap: wrap; }
+  .pill { border:1px solid #e5e7eb; border-radius:999px; padding:6px 10px; background:#fff; cursor:pointer; font-size:.92rem; text-decoration:none; color:inherit; }
+  .pill.active { background:#111827; color:#fff; border-color:#111827; }
+  .seg { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .select { border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; font-size:.92rem; }
+</style>
+
+<div class="filters" id="filters">
+  <div class="pills">
+    <a class="pill {% if filter_state.oferta %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.oferta %}oferta=1&{% endif %}{{ request.GET.urlencode }}">
+      Ofertas
+    </a>
+    <a class="pill {% if filter_state.stock %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.stock %}stock=1&{% endif %}{{ request.GET.urlencode }}">
+      Con stock
+    </a>
+    <a class="pill {% if filter_state.abierto %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.abierto %}abierto=1&{% endif %}{{ request.GET.urlencode }}">
+      Abierto ahora
+    </a>
+
+    {% for c in filter_state.categories %}
+      {% if filter_state.categoria == c.slug %}
+        <a class="pill active" href="{% url 'home' %}?{{ request.GET.urlencode|cut:'categoria='|cut:c.slug }}">{{ c.title }}</a>
+      {% else %}
+        <a class="pill" href="{% url 'home' %}?categoria={{ c.slug }}&{{ request.GET.urlencode }}">{{ c.title }}</a>
+      {% endif %}
+    {% endfor %}
+
+    <div class="seg">
+      <label for="ordenSel" style="font-size:.9rem; color:#6b7280;">Ordenar:</label>
+      <select id="ordenSel" class="select">
+        <option value="nuevo" {% if filter_state.orden == 'nuevo' %}selected{% endif %}>Más nuevo</option>
+        <option value="mas-comprado" {% if filter_state.orden == 'mas-comprado' %}selected{% endif %}>Más comprado</option>
+        <option value="precio-asc" {% if filter_state.orden == 'precio-asc' %}selected{% endif %}>Precio ↑</option>
+        <option value="precio-desc" {% if filter_state.orden == 'precio-desc' %}selected{% endif %}>Precio ↓</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const sel = document.getElementById('ordenSel');
+  if (!sel) return;
+  sel.addEventListener('change', () => {
+    const sp = new URLSearchParams(window.location.search);
+    sp.set('orden', sel.value);
+    window.location.search = sp.toString();
+  });
+})();
+</script>
+<style>
   .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
   .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
   .grid-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }

@@ -3,46 +3,23 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.db.models import Count, F, Q
 from marketplace.models import Partner, Pack
+from marketplace.services.filters import apply_pack_filters, ui_filter_state
 
 def home(request):
-    # Static categories (can be wired to real filters later)
-    categories = [
-        {"slug": "restaurantes", "title": "Restaurantes", "icon": "🍔"},
-        {"slug": "super", "title": "Súper", "icon": "🛒"},
-        {"slug": "kioscos", "title": "Kioscos", "icon": "🥤"},
-        {"slug": "helados", "title": "Helados", "icon": "🍨"},
-        {"slug": "cafes", "title": "Cafés", "icon": "☕"},
-        {"slug": "verdulerias", "title": "Verdulerías", "icon": "🥬"},
-        {"slug": "carnicerias", "title": "Carnicerías", "icon": "🥩"},
-        {"slug": "fruterias", "title": "Fruterías", "icon": "🍎"},
-    ]
+    base = Pack.objects.all()
+    newest = apply_pack_filters(base, request.GET)[:24]
 
-    now = timezone.now()
-    active_filter = Q(stock__gt=0, pickup_end__gte=now)
+    params = request.GET.copy()
+    params_mb = params.copy()
+    params_mb["orden"] = params_mb.get("orden") or "mas-comprado"
+    most_bought = apply_pack_filters(base, params_mb)[:24]
 
-    # Newest: latest created and active
-    newest = (
-        Pack.objects.filter(active_filter)
-        .order_by("-creado_at")[:12]
-    )
-
-    # Most bought: by number of orders
-    most_bought = (
-        Pack.objects.filter(active_filter)
-        .annotate(n=Count("orders"))
-        .order_by("-n", "-creado_at")[:12]
-    )
-
-    # Offers: oferta < original
-    offers = (
-        Pack.objects.filter(active_filter)
-        .filter(precio_oferta__isnull=False)
-        .filter(precio_oferta__lt=F("precio_original"))
-        .order_by("precio_oferta")[:12]
-    )
+    params_of = params.copy()
+    params_of["oferta"] = "1"
+    offers = apply_pack_filters(base, params_of)[:24]
 
     ctx = {
-        "categories": categories,
+        "filter_state": ui_filter_state(request.GET),
         "newest": newest,
         "most_bought": most_bought,
         "offers": offers,
