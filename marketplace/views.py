@@ -232,6 +232,19 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         from_q = (self.request.GET.get("from") or "").lower()
         ctx["from_cart"] = from_q == "cart"
+        try:
+            from payments.models import Payment
+            ctx["payment_summary"] = Payment.summary_for_order(self.object)
+        except Exception:
+            ctx["payment_summary"] = {
+                "exists": False,
+                "provider": None,
+                "status": None,
+                "preference_id": None,
+                "payment_id": None,
+                "paid_at": None,
+                "created_at": None,
+            }
         return ctx
 
 # --- endpoint que devuelve el PNG del QR (solo dueño) ---

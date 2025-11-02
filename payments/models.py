@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from typing import Optional, Dict
 
 
 class Payment(models.Model):
@@ -61,6 +62,32 @@ class Payment(models.Model):
         except Exception:
             pass
         return changed
+
+    @classmethod
+    def summary_for_order(cls, order) -> Dict:
+        """
+        Devuelve un resumen amigable del último pago para un pedido.
+        """
+        pay = cls.objects.filter(order=order).order_by('-created_at').first()
+        if not pay:
+            return {
+                "exists": False,
+                "provider": None,
+                "status": None,
+                "preference_id": None,
+                "payment_id": None,
+                "paid_at": None,
+                "created_at": None,
+            }
+        return {
+            "exists": True,
+            "provider": pay.provider,
+            "status": pay.status,
+            "preference_id": pay.preference_id,
+            "payment_id": pay.payment_id,
+            "paid_at": pay.paid_at,
+            "created_at": pay.created_at,
+        }
 
 
 class WebhookLog(models.Model):

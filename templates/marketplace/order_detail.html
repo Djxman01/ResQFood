@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!doctype html>
 <html lang="es">
 <head>
@@ -35,7 +35,7 @@
   </head>
 <body>
   <main class="wrap">
-    <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">← Volver</a>
+    <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">â† Volver</a>
     <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle del pedido #{{ order.id }}</h1>
 
     <section class="card">
@@ -49,7 +49,7 @@
 
         <p class="muted" style="margin-top:.5rem;">
           <strong>Retiro:</strong>
-          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} – {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
+          {{ order.pack.pickup_start|date:"d/m/Y H:i" }} â€“ {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
         </p>
 
         <p class="muted"><strong>Precio:</strong> ${{ order.precio_pagado|floatformat:2 }}</p>
@@ -72,16 +72,118 @@
             <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
           </div>
           <p class="muted" style="text-align:center; margin-top:.5rem;">
-            Mostrá este código en el comercio para canjear tu pack.
+            MostrÃ¡ este cÃ³digo en el comercio para canjear tu pack.
           </p>
         {% else %}
-          <div class="pay-card">
+          <style>
+  .banner { border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; margin-bottom:12px; background:#fff; }
+  .b-ok { border-color:#86efac; background:#ecfdf5; }
+  .b-warn { border-color:#fde68a; background:#fffbeb; }
+  .b-info { border-color:#93c5fd; background:#eff6ff; }
+  .b-err { border-color:#fca5a5; background:#fef2f2; }
+  .b-title { font-weight:700; margin-bottom:4px; }
+  .b-muted { color:#6b7280; font-size:.92rem; }
+  .b-cta { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { border:1px solid #2563eb; background:#2563eb; color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:600; }
+  .btn.secondary { background:#fff; color:#2563eb; }
+</style>
+
+{% comment %} Banner de estado del pedido y pagos {% endcomment %}
+{% with ps=payment_summary o=order %}
+  {% if o.estado == "pagado" %}
+    <div class="banner b-ok">
+      <div class="b-title">Pago confirmado ✅</div>
+      <div class="b-muted">
+        Tu pedido está pagado. Mostraremos el QR/código al momento del retiro.
+        {% if ps.exists and ps.paid_at %}<br>Confirmado el: {{ ps.paid_at|date:"d/m/Y H:i" }}{% endif %}
+      </div>
+    </div>
+
+  {% elif o.estado == "retirado" %}
+    <div class="banner b-ok">
+      <div class="b-title">Pedido retirado ✅</div>
+      <div class="b-muted">¡Gracias por tu compra!</div>
+    </div>
+
+  {% elif o.estado == "cancelado" %}
+    <div class="banner b-err">
+      <div class="b-title">Pedido cancelado</div>
+      <div class="b-muted">Este pedido fue cancelado y no admite pagos.</div>
+    </div>
+
+  {% else %}
+    {% if ps.exists %}
+      {% if ps.status == "pending" %}
+        <div class="banner b-info">
+          <div class="b-title">Pago en curso</div>
+          <div class="b-muted">
+            Tu pago está pendiente. Si usaste Mercado Pago, esperá la confirmación o
+            volvé a intentarlo si el checkout no se completó.
+          </div>
+          <div class="b-cta">
+            {% if o.metodo_pago == "mp" %}
+              <button id="payNowBtn" class="btn" data-order-id="{{ o.id }}">Reintentar pago</button>
+            {% elif o.metodo_pago == "transferencia" %}
+              <button id="transferStartBtn" class="btn" data-order-id="{{ o.id }}">Ver datos de transferencia</button>
+            {% elif o.metodo_pago == "efectivo" %}
+              <button id="cashConfirmBtn" class="btn" data-order-id="{{ o.id }}">Confirmar reserva (efectivo)</button>
+            {% endif %}
+          </div>
+        </div>
+
+      {% elif ps.status == "approved" %}
+        <div class="banner b-ok">
+          <div class="b-title">Pago aprobado</div>
+          <div class="b-muted">
+            Estamos acreditando tu pago. Tu pedido pasará a “pagado” en instantes.
+            {% if ps.paid_at %}<br>Aprobado el: {{ ps.paid_at|date:"d/m/Y H:i" }}{% endif %}
+          </div>
+        </div>
+
+      {% elif ps.status == "rejected" %}
+        <div class="banner b-err">
+          <div class="b-title">Pago rechazado</div>
+          <div class="b-muted">Tu intento de pago fue rechazado. Podés elegir otro medio o reintentar.</div>
+          <div class="b-cta">
+            {% if o.metodo_pago == "mp" %}
+              <button id="payNowBtn" class="btn" data-order-id="{{ o.id }}">Pagar con Mercado Pago</button>
+            {% endif %}
+            <button class="btn secondary" onclick="document.querySelector('input[name=metodo_pago][value=efectivo]').click()">Elegir efectivo</button>
+            <button class="btn secondary" onclick="document.querySelector('input[name=metodo_pago][value=transferencia]').click()">Elegir transferencia</button>
+          </div>
+        </div>
+
+      {% elif ps.status == "cancelled" %}
+        <div class="banner b-warn">
+          <div class="b-title">Pago cancelado</div>
+          <div class="b-muted">Cancelaste el flujo de pago. Si querés, podés retomarlo ahora.</div>
+          <div class="b-cta">
+            {% if o.metodo_pago == "mp" %}
+              <button id="payNowBtn" class="btn" data-order-id="{{ o.id }}">Reiniciar pago</button>
+            {% endif %}
+          </div>
+        </div>
+
+      {% else %}
+        <div class="banner b-info">
+          <div class="b-title">Pago</div>
+          <div class="b-muted">Aún no registramos un intento de pago. Elegí un medio y continuá.</div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="banner b-info">
+        <div class="b-title">Pago</div>
+        <div class="b-muted">Aún no registramos un intento de pago. Elegí un medio y continuá.</div>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endwith %}<div class="pay-card">
             <div class="pay-left">
-              <strong>El QR aparecerá cuando el pago esté confirmado.</strong>
-              <div class="muted">Usá Mercado Pago, efectivo o transferencia.</div>
+              <strong>El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</strong>
+              <div class="muted">UsÃ¡ Mercado Pago, efectivo o transferencia.</div>
             </div>
             <div class="pay-right">
-              <h4>Elegí cómo pagar:</h4>
+              <h4>ElegÃ­ cÃ³mo pagar:</h4>
               <label class="pm-option">
                 <input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}>
                 <span>Mercado Pago (tarjeta, efectivo, QR)</span>
@@ -100,7 +202,7 @@
                 {% endwith %}
                 <button id="cashConfirmBtn" class="btn-primary" style="display:none;" data-order-id="{{ order.id }}">Confirmar reserva (efectivo)</button>
                 <button id="transferStartBtn" class="btn-primary" style="display:none;" data-order-id="{{ order.id }}">Ver datos de transferencia</button>
-                <span id="payLoading" class="muted" style="display:none;">Procesando…</span>
+                <span id="payLoading" class="muted" style="display:none;">Procesandoâ€¦</span>
                 <div id="payError" class="muted" style="display:none;color:#b00020;" aria-live="polite"></div>
                 <span class="badge-id">ID de pedido: #{{ order.id }}</span>
               </div>
@@ -197,10 +299,10 @@
         throw new Error(`No se pudo iniciar el pago (${resp.status}). ${text || ''}`);
       }
       const data = await resp.json();
-      if (!data.init_point) throw new Error('No se recibió init_point desde el servidor.');
+      if (!data.init_point) throw new Error('No se recibiÃ³ init_point desde el servidor.');
       window.location.href = data.init_point;
     } catch (e) {
-      if (err) { err.textContent = e && e.message ? e.message : 'Error en la red. Intentá nuevamente.'; err.style.display = 'block'; }
+      if (err) { err.textContent = e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.'; err.style.display = 'block'; }
       btn.disabled = false;
     } finally {
       if (spinner) spinner.style.display = 'none';
@@ -221,7 +323,7 @@
     try {
       const resp = await fetch(`/api/payments/cash/start/${btn.getAttribute('data-order-id')}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
       if (!resp.ok) throw new Error(await resp.text());
-      alert('Reserva confirmada. Pagás en efectivo al retirar.');
+      alert('Reserva confirmada. PagÃ¡s en efectivo al retirar.');
     } catch(ex){ if(err){ err.textContent = ex.message || 'No se pudo confirmar la reserva en efectivo.'; err.style.display='block'; } }
     finally { if (spinner) spinner.style.display = 'none'; }
   });
@@ -240,3 +342,4 @@
   });
 })();
 </script>
+
