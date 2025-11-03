@@ -1,187 +1,190 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Inicio{% endblock %}
 
 {% block content %}
 <style>
-  .filters { max-width:1100px; margin: 8px auto 16px; padding: 0 16px; }
-  .pills { display:flex; gap:8px; flex-wrap: wrap; }
-  .pill { border:1px solid #e5e7eb; border-radius:999px; padding:6px 10px; background:#fff; cursor:pointer; font-size:.92rem; text-decoration:none; color:inherit; }
-  .pill.active { background:#111827; color:#fff; border-color:#111827; }
-  .seg { margin-left:auto; display:flex; gap:8px; align-items:center; }
-  .select { border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; font-size:.92rem; }
+  .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
+  .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
+  .hero { max-width:1100px; margin:16px auto; padding:0 16px; }
+  .hero-card{ background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:14px; }
+  .hero-title{ font-size:1.6rem; font-weight:800; margin:0 0 6px; }
+  .hero-sub{ color:#6b7280; margin:0 0 16px; }
+  .grid-tiles { display:grid; gap:12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 640px) { .grid-tiles { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1100px){ .grid-tiles { grid-template-columns: repeat(6, 1fr); } }
+  .tile { display:flex; align-items:center; justify-content:center; flex-direction:column; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; text-align:center; transition: transform .15s ease, box-shadow .15s ease; text-decoration: none; color: inherit; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+  .tile .t { margin-top:8px; font-weight:700; font-size:.95rem; color:#111827; }
+
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; transition: box-shadow .15s ease, transform .15s ease; text-decoration:none; color:inherit; }
+  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); transform: translateY(-2px); }
+  .thumb { aspect-ratio: 4/3; background:#f3f4f6; display:block; width:100%; object-fit:cover; }
+  .card-body { padding: 10px 12px; }
+
+  /* Carousel */
+  .carousel{ position:relative; padding:0 24px; }
+  .carousel-track{ display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:6px; scrollbar-width:none; }
+  .carousel-track::-webkit-scrollbar{ display:none; }
+  .carousel-track > a.card{ min-width:240px; scroll-snap-align:start; }
+  @media (min-width:768px){ .carousel-track > a.card{ min-width:280px; } }
+  .carousel-btn{ position:absolute; top:50%; transform:translateY(-50%); border:1px solid var(--brand); background:#fff; color:var(--brand); width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
+  .carousel-btn.prev{ left:4px; }
+  .carousel-btn.next{ right:4px; }
 </style>
 
-<div class="filters" id="filters">
-  <div class="pills">
-    <a class="pill {% if filter_state.oferta %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.oferta %}oferta=1&{% endif %}{{ request.GET.urlencode }}">
-      Ofertas
-    </a>
-    <a class="pill {% if filter_state.stock %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.stock %}stock=1&{% endif %}{{ request.GET.urlencode }}">
-      Con stock
-    </a>
-    <a class="pill {% if filter_state.abierto %}active{% endif %}" href="{% url 'home' %}?{% if not filter_state.abierto %}abierto=1&{% endif %}{{ request.GET.urlencode }}">
-      Abierto ahora
-    </a>
+<div class="hero">
+  <div class="hero-card">
+    <div class="hero-title">ResQFood</div>
+    <p class="hero-sub">Descubr&iacute; packs con descuento en comercios cercanos. Ahorr&aacute; y evit&aacute; desperdicios.</p>
+    <a class="btn" href="/packs/">Ver packs</a>
+  </div>
+</div>
 
-    {% for c in filter_state.categories %}
-      {% if filter_state.categoria == c.slug %}
-        <a class="pill active" href="{% url 'home' %}?{{ request.GET.urlencode|cut:'categoria='|cut:c.slug }}">{{ c.title }}</a>
-      {% else %}
-        <a class="pill" href="{% url 'home' %}?categoria={{ c.slug }}&{{ request.GET.urlencode }}">{{ c.title }}</a>
-      {% endif %}
+<div class="section">
+  <h2>Explorar categor&iacute;as</h2>
+  <div class="grid-tiles">
+    {% for c in categories %}
+      <a class="tile" href="{{ c.url }}">
+        <img src="{{ c.img_url }}" alt="{{ c.title }}" class="thumb" style="aspect-ratio:1/1; width:100%; border-radius:12px;">
+        <div class="t">{{ c.title }}</div>
+      </a>
     {% endfor %}
+  </div>
+</div>
 
-    <div class="seg">
-      <label for="ordenSel" style="font-size:.9rem; color:#6b7280;">Ordenar:</label>
-      <select id="ordenSel" class="select">
-        <option value="nuevo" {% if filter_state.orden == 'nuevo' %}selected{% endif %}>Más nuevo</option>
-        <option value="mas-comprado" {% if filter_state.orden == 'mas-comprado' %}selected{% endif %}>Más comprado</option>
-        <option value="precio-asc" {% if filter_state.orden == 'precio-asc' %}selected{% endif %}>Precio ↑</option>
-        <option value="precio-desc" {% if filter_state.orden == 'precio-desc' %}selected{% endif %}>Precio ↓</option>
-      </select>
+<div class="section">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <h2>Lo m&aacute;s nuevo</h2>
+  </div>
+  <div class="carousel">
+    <button class="carousel-btn prev" type="button" aria-label="Anterior" data-target="#newest">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <button class="carousel-btn next" type="button" aria-label="Siguiente" data-target="#newest">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8.59 16.59 1.41 1.41L16 12 10 6 8.59 7.41 13.17 12z"/></svg>
+    </button>
+    <div id="newest" class="carousel-track">
+    {% for p in newest %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta" style="display:flex;justify-content:space-between;color:#6b7280;">
+            <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+            <span>{{ p.partner.nombre }}</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="muted" style="color:#6b7280;">Sin novedades por ahora.</div>
+    {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <h2>Lo m&aacute;s comprado</h2>
+  </div>
+  <div class="carousel">
+    <button class="carousel-btn prev" type="button" aria-label="Anterior" data-target="#mostbought">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <button class="carousel-btn next" type="button" aria-label="Siguiente" data-target="#mostbought">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8.59 16.59 1.41 1.41L16 12 10 6 8.59 7.41 13.17 12z"/></svg>
+    </button>
+    <div id="mostbought" class="carousel-track">
+    {% for p in most_bought %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta" style="display:flex;justify-content:space-between;color:#6b7280;">
+            <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+            <span>{{ p.partner.nombre }}</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="muted" style="color:#6b7280;">A&uacute;n no hay m&aacute;s comprados.</div>
+    {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <h2>Te podr&iacute;a interesar</h2>
+  </div>
+  <div class="carousel">
+    <button class="carousel-btn prev" type="button" aria-label="Anterior" data-target="#suggested">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <button class="carousel-btn next" type="button" aria-label="Siguiente" data-target="#suggested">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8.59 16.59 1.41 1.41L16 12 10 6 8.59 7.41 13.17 12z"/></svg>
+    </button>
+    <div id="suggested" class="carousel-track">
+      {% for p in newest %}
+      <a class="card" href="/packs/{{ p.id }}/">
+        <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async">
+        <div class="card-body">
+          <p class="title">{{ p.titulo|default:"Pack" }}</p>
+          <div class="meta" style="display:flex;justify-content:space-between;color:#6b7280;">
+            <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+            <span>{{ p.partner.nombre }}</span>
+          </div>
+        </div>
+      </a>
+      {% empty %}
+        <div class="muted" style="color:#6b7280;">Pronto m&aacute;s sugerencias.</div>
+      {% endfor %}
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  const sel = document.getElementById('ordenSel');
-  if (!sel) return;
-  sel.addEventListener('change', () => {
-    const sp = new URLSearchParams(window.location.search);
-    sp.set('orden', sel.value);
-    window.location.search = sp.toString();
+  function byId(id){ return document.querySelector(id); }
+  function scrollTrack(id, dir){
+    const el = byId(id); if(!el) return;
+    const amount = Math.max(el.clientWidth * 0.9, 260);
+    el.scrollBy({ left: dir * amount, behavior: 'smooth' });
+  }
+  document.querySelectorAll('.carousel-btn.prev').forEach(btn => {
+    btn.addEventListener('click', () => scrollTrack(btn.dataset.target, -1));
+  });
+  document.querySelectorAll('.carousel-btn.next').forEach(btn => {
+    btn.addEventListener('click', () => scrollTrack(btn.dataset.target, 1));
+  });
+
+  // Fallback aleatorio de imÃ¡genes para packs sin foto
+  const STOCK_POOL = [
+    "{% static 'img/stock/verduleria/1.jpg' %}",
+    "{% static 'img/stock/verduleria/2.jpeg' %}",
+    "{% static 'img/stock/verduleria/3.jpg' %}",
+    "{% static 'img/stock/cafes/1.jpg' %}",
+    "{% static 'img/stock/cafes/2.jpg' %}",
+    "{% static 'img/stock/supermercados/1.jpg' %}",
+    "{% static 'img/stock/supermercados/2.jpg' %}",
+    "{% static 'img/stock/supermercados/3.jpg' %}",
+    "{% static 'img/stock/carniceria/2.jpeg' %}",
+    "{% static 'img/stock/carniceria/3.webp' %}",
+    "{% static 'img/stock/helados/1.png' %}",
+    "{% static 'img/stock/helados/2.jpeg' %}",
+    "{% static 'img/stock/helados/3.jpeg' %}",
+    "{% static 'img/stock/panaderia/057298fd6dce58a10868606e37cb774e.jpg' %}",
+    "{% static 'img/stock/panaderia/panes.jpg' %}",
+  ];
+  function pick(){ return STOCK_POOL[Math.floor(Math.random()*STOCK_POOL.length)]; }
+  document.querySelectorAll('.carousel-track img').forEach(img => {
+    function swap(){ img.src = pick(); }
+    img.addEventListener('error', swap, { once: true });
+    try { if ((img.currentSrc||img.src||'').includes('placeholder-pack.svg')) swap(); } catch(e){}
   });
 })();
 </script>
-<style>
-  .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
-  .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
-  .grid-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 640px) { .grid-tiles { grid-template-columns: repeat(4, 1fr);} }
-  @media (min-width: 1024px){ .grid-tiles { grid-template-columns: repeat(8, 1fr);} }
-  .tile { display:flex; align-items:center; justify-content:center; flex-direction:column; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; text-align:center; transition: transform .15s ease, box-shadow .15s ease; text-decoration: none; color: inherit; }
-  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
-  .tile .icon { font-size: 1.6rem; }
-  .tile .t { margin-top:8px; font-weight:600; font-size:.95rem; color:#111827; }
 
-  .grid-cards { display:grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 768px){ .grid-cards { grid-template-columns: repeat(3, 1fr);} }
-  @media (min-width: 1100px){ .grid-cards { grid-template-columns: repeat(4, 1fr);} }
-  .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; transition: box-shadow .15s ease, transform .15s ease; text-decoration:none; color:inherit; }
-  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); transform: translateY(-2px); }
-  .thumb { aspect-ratio: 4/3; background:#f3f4f6; display:block; width:100%; object-fit:cover; }
-  .card-body { padding: 10px 12px; }
-  .title { font-weight: 600; font-size: .98rem; color:#111827; margin:0 0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .meta { color:#6b7280; font-size:.88rem; display:flex; justify-content:space-between; }
-  .price { font-weight:700; color:#111827; }
-  .price s { color:#9ca3af; font-weight:500; margin-left:6px; }
-  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-  .see-all { color:#2563eb; font-weight:600; font-size:.9rem; text-decoration:none; }
-</style>
-
-<!-- Categorías -->
-<section class="section">
-  <div class="section-header">
-    <h2>Explorar categorías</h2>
-    <a class="see-all" href="/packs/">Ver todo</a>
-  </div>
-  <div class="grid-tiles">
-    {% for c in categories %}
-      <a class="tile" href="/packs/?categoria={{ c.slug }}">
-        <div class="icon">{{ c.icon }}</div>
-        <div class="t">{{ c.title }}</div>
-      </a>
-    {% endfor %}
-  </div>
-</section>
-
-<!-- Lo más nuevo -->
-<section class="section">
-  <div class="section-header">
-    <h2>Lo más nuevo</h2>
-    <a class="see-all" href="/packs/?orden=nuevo">Ver más</a>
-  </div>
-  <div class="grid-cards">
-    {% for p in newest %}
-      <a class="card" href="/packs/{{ p.id }}/">
-        {% if p.imagen %}
-          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
-        {% else %}
-          <div class="thumb"></div>
-        {% endif %}
-        <div class="card-body">
-          <p class="title">{{ p.titulo|default:"Pack" }}</p>
-          <div class="meta">
-            <span class="price">
-              ${{ p.precio_oferta|default:p.precio_original }}
-              {% if p.precio_oferta and p.precio_oferta < p.precio_original %}
-                <s>${{ p.precio_original }}</s>
-              {% endif %}
-            </span>
-            <span>{{ p.partner.nombre|default:"" }}</span>
-          </div>
-        </div>
-      </a>
-    {% empty %}
-      <div class="muted">Sin novedades por ahora.</div>
-    {% endfor %}
-  </div>
-</section>
-
-<!-- Lo más comprado -->
-<section class="section">
-  <div class="section-header">
-    <h2>Lo más comprado</h2>
-    <a class="see-all" href="/packs/?orden=mas-comprado">Ver más</a>
-  </div>
-  <div class="grid-cards">
-    {% for p in most_bought %}
-      <a class="card" href="/packs/{{ p.id }}/">
-        {% if p.imagen %}
-          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
-        {% else %}<div class="thumb"></div>{% endif %}
-        <div class="card-body">
-          <p class="title">{{ p.titulo|default:"Pack" }}</p>
-          <div class="meta">
-            <span class="price">${{ p.precio_oferta|default:p.precio_original }}</span>
-            <span>{{ p.n|default:0 }} ventas</span>
-          </div>
-        </div>
-      </a>
-    {% empty %}
-      <div class="muted">Aún no hay más comprados.</div>
-    {% endfor %}
-  </div>
-</section>
-
-<!-- Ofertas -->
-<section class="section">
-  <div class="section-header">
-    <h2>Ofertas</h2>
-    <a class="see-all" href="/packs/?filtro=ofertas">Ver más</a>
-  </div>
-  <div class="grid-cards">
-    {% for p in offers %}
-      <a class="card" href="/packs/{{ p.id }}/">
-        {% if p.imagen %}
-          <img class="thumb" src="{{ p.imagen.url }}" alt="{{ p.titulo|default:'Pack' }}">
-        {% else %}<div class="thumb"></div>{% endif %}
-        <div class="card-body">
-          <p class="title">{{ p.titulo|default:"Pack" }}</p>
-          <div class="meta">
-            <span class="price">
-              ${{ p.precio_oferta }} <s>${{ p.precio_original }}</s>
-            </span>
-            <span>{{ p.partner.nombre|default:"" }}</span>
-          </div>
-        </div>
-      </a>
-    {% empty %}
-      <div class="muted">No hay ofertas activas en este momento.</div>
-    {% endfor %}
-  </div>
-</section>
 {% endblock %}
+

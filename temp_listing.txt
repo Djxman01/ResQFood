@@ -1,0 +1,352 @@
+   1: {% load static %}
+   2: 
+   3:         {% else %}
+   4:           <style>
+   5:   .pay-card {
+   6:     border: 1px solid #e5e7eb;
+   7:     border-radius: 12px;
+   8:     padding: 16px;
+   9:     background: #fff;
+  10:     display: grid;
+  11:     grid-template-columns: 1.1fr 1fr;
+  12:     gap: 16px;
+  13:     align-items: start;
+  14:   }
+  15:   .pay-left {
+  16:     color: #374151;
+  17:     font-size: 0.95rem;
+  18:   }
+  19:   .pay-left strong {
+  20:     display: block;
+  21:     margin-bottom: 4px;
+  22:   }
+  23:   .pay-right h4 {
+  24:     margin: 0 0 8px;
+  25:     font-size: 1.05rem;
+  26:   }
+  27:   .pm-option {
+  28:     display: flex;
+  29:     align-items: start;
+  30:     gap: 8px;
+  31:     margin: 6px 0;
+  32:   }
+  33:   .pm-option input {
+  34:     margin-top: 3px;
+  35:   }
+  36:   .pm-actions {
+  37:     display: flex;
+  38:     align-items: center;
+  39:     gap: 10px;
+  40:     flex-wrap: wrap;
+  41:     margin-top: 8px;
+  42:   }
+  43:   .btn-primary {
+  44:     appearance: none;
+  45:     border: 1px solid #2563eb;
+  46:     background: #2563eb;
+  47:     color: #fff;
+  48:     padding: 8px 12px;
+  49:     border-radius: 8px;
+  50:     cursor: pointer;
+  51:     font-weight: 600;
+  52:     transition: background 0.2s ease;
+  53:   }
+  54:   .btn-primary:hover {
+  55:     background: #1d4ed8;
+  56:   }
+  57:   .btn-primary[disabled] {
+  58:     opacity: 0.6;
+  59:     cursor: not-allowed;
+  60:   }
+  61:   .muted {
+  62:     color: #6b7280;
+  63:     font-size: 0.9rem;
+  64:   }
+  65:   .badge-id {
+  66:     color: #6b7280;
+  67:     font-size: 0.9rem;
+  68:   }
+  69:   @media (max-width: 600px) {
+  70:     .pay-card {
+  71:       grid-template-columns: 1fr;
+  72:     }
+  73:   }
+  74: </style>
+  75: 
+  76: <div class=\"pay-card\">
+  77:   <div class=\"pay-left\">
+  78:     <strong>El QR aparecerá cuando el pago esté confirmado.</strong>
+  79:     <div class=\"muted\">Usá Mercado Pago, efectivo o transferencia.</div>
+  80:   </div>
+  81: 
+  82:   <div class=\"pay-right\">
+  83:     <h4>Elegí cómo pagar:</h4>
+  84: 
+  85:     <label class=\"pm-option\">
+  86:       <input type=\"radio\" name=\"metodo_pago\" value=\"mp\"
+  87:              {% if order.metodo_pago == \"mp\" %}checked{% endif %}>
+  88:       <span>Mercado Pago (tarjeta, efectivo, QR)</span>
+  89:     </label>
+  90: 
+  91:     <label class=\"pm-option\">
+  92:       <input type=\"radio\" name=\"metodo_pago\" value=\"efectivo\"
+  93:              {% if order.metodo_pago == \"efectivo\" %}checked{% endif %}>
+  94:       <span>Efectivo al retirar</span>
+  95:     </label>
+  96: 
+  97:     <label class=\"pm-option\">
+  98:       <input type=\"radio\" name=\"metodo_pago\" value=\"transferencia\"
+  99:              {% if order.metodo_pago == \"transferencia\" %}checked{% endif %}>
+ 100:       <span>Transferencia bancaria</span>
+ 101:     </label>
+ 102: 
+ 103:     <div class=\"pm-actions\">
+ 104:       <button id=\"payNowBtn\" class=\"btn-primary\"
+ 105:               data-order-id=\"{{ order.id }}\"
+ 106:               {% if order.estado == \"pagado\" or (order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio|default:0) <= 0 %}disabled{% endif %}>
+ 107:         Pagar ahora
+ 108:       </button>
+ 109: 
+ 110:       <button id=\"cashConfirmBtn\" class=\"btn-primary\"
+ 111:               style=\"display:none;\"
+ 112:               data-order-id=\"{{ order.id }}\">
+ 113:         Confirmar reserva (efectivo)
+ 114:       </button>
+ 115: 
+ 116:       <button id=\"transferStartBtn\" class=\"btn-primary\"
+ 117:               style=\"display:none;\"
+ 118:               data-order-id=\"{{ order.id }}\">
+ 119:         Ver datos de transferencia
+ 120:       </button>
+ 121: 
+ 122:       <span id=\"payLoading\" class=\"muted\" style=\"display:none;\">Procesando…</span>
+ 123:       <div id=\"payError\" class=\"muted\"
+ 124:            style=\"display:none;color:#b00020;\"
+ 125:            aria-live=\"polite\"></div>
+ 126: 
+ 127:       <span class=\"badge-id\">ID de pedido: #{{ order.id }}</span>
+ 128:     </div>
+ 129:   </div>
+ 130: </div>
+ 131: 
+ 132: {% load static %}
+ 133: <!doctype html>
+ 134: <html lang="es">
+ 135: <head>
+ 136:   <meta charset="utf-8">
+ 137:   <title>Reserva #{{ order.id }}</title>
+ 138:   <meta name="viewport" content="width=device-width, initial-scale=1">
+ 139:   <style>
+ 140:     .wrap { max-width: 900px; margin: 1.25rem auto; padding: 0 1rem; }
+ 141:     .card { border:1px solid #e5e7eb; border-radius:12px; padding:16px; display:grid; grid-template-columns: 1fr 280px; gap:16px; }
+ 142:     .muted { color:#6b7280; }
+ 143:     .badge { font-size:.75rem; padding:.25rem .5rem; border-radius:.5rem; display:inline-block; margin-top:.25rem; }
+ 144:     .b-pend { background:#FEF3C7; color:#92400E; }
+ 145:     .b-paga { background:#DBEAFE; color:#1E3A8A; }
+ 146:     .b-ret  { background:#DCFCE7; color:#166534; }
+ 147:     .b-canc { background:#E5E7EB; color:#374151; }
+ 148:     .b-exp  { background:#FEE2E2; color:#991B1B; }
+ 149:     .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; cursor:pointer; }
+ 150:     img.cover { width:100%; height:180px; object-fit:cover; border-radius:8px; }
+ 151:     .qrbox { border:1px dashed #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:12px; }
+ 152:   </style>
+ 153:   </head>
+ 154: <body>
+ 155:   <main class="wrap">
+ 156:     <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">? Volver</a>
+ 157:     <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle del pedido #{{ order.id }}</h1>
+ 158: 
+ 159:     <section class="card">
+ 160:       <div>
+ 161:         {% if order.pack.imagen %}
+ 162:           <img class="cover" src="{{ order.pack.imagen.url }}" alt="{{ order.pack.titulo }}">
+ 163:         {% endif %}
+ 164: 
+ 165:         <h2 style="margin:.5rem 0; font-weight:700;">{{ order.pack.titulo }}</h2>
+ 166:         <div class="muted">{{ order.pack.partner.nombre }}</div>
+ 167: 
+ 168:         <p class="muted" style="margin-top:.5rem;">
+ 169:           <strong>Retiro:</strong>
+ 170:           {{ order.pack.pickup_start|date:"d/m/Y H:i" }} â€“
+ 171:           {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
+ 172:         </p>
+ 173: 
+ 174:         <p class="muted"><strong>Precio:</strong> ${{ order.precio_pagado|floatformat:2 }}</p>
+ 175: 
+ 176:         {% with es=order.estado %}
+ 177:           <span id="estado-badge" class="badge
+ 178:             {% if es == 'pendiente' %}b-pend
+ 179:             {% elif es == 'pagado' %}b-paga
+ 180:             {% elif es == 'retirado' %}b-ret
+ 181:             {% elif es == 'cancelado' %}b-canc
+ 182:             {% elif es == 'expirado' %}b-exp
+ 183:             {% endif %}
+ 184:           ">{{ es|upper }}</span>
+ 185:         {% endwith %}
+ 186:       </div>
+ 187: 
+ 188:       <div>
+ 189:         {% if order.estado == 'pagado' %}
+ 190:           <div class="qrbox">
+ 191:             <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
+ 192:           </div>
+ 193:           <p class="muted" style="text-align:center; margin-top:.5rem;">
+ 194:             MostrÃ¡ este cÃ³digo en el comercio para canjear tu pack.
+ 195:           </p>
+ 196:         {% else %}
+ 197:           <div class="qrbox">
+ 198:             <span class="muted">El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</span>
+ 199:                     <div id="payment-method-block" style="margin-top:.75rem;">
+ 200:             <label style="font-weight:600;">Elegí cómo pagar:</label>
+ 201:             <div>
+ 202:               <label><input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}> Mercado Pago (tarjeta, efectivo, QR)</label><br>
+ 203:               <label><input type="radio" name="metodo_pago" value="efectivo" {% if order.metodo_pago == "efectivo" %}checked{% endif %}> Efectivo al retirar</label><br>
+ 204:               <label><input type="radio" name="metodo_pago" value="transferencia" {% if order.metodo_pago == "transferencia" %}checked{% endif %}> Transferencia bancaria</label>
+ 205:             </div>
+ 206:             <div id="pm-info" style="margin-top:6px; font-size:0.95rem;"></div>
+ 207:           </div>
+ 208:           <div id="pay-actions" style="margin-top:10px; text-align:center;">
+ 209:             {% with price=order.precio_pagado|default:order.pack.precio_oferta|default:order.pack.precio_original|default:0 %}{% if price %}
+ 210:             <button class="btn" id="payNowBtn" data-order-id="{{ order.id }}" {% if order.estado == 'pagado' %}disabled{% endif %}>Pagar ahora</button>
+ 211:             {% else %}
+ 212:             <button class="btn" id="payNowBtn" disabled title="Este pedido no tiene un monto válido para pagar.">Pagar ahora</button>
+ 213:             {% endif %}{% endwith %}
+ 214:             <button class="btn" id="cashConfirmBtn" data-order-id="{{ order.id }}" style="display:none;">Confirmar reserva (pago en efectivo)</button>
+ 215:             <button class="btn" id="transferStartBtn" data-order-id="{{ order.id }}" style="display:none;">Ver datos de transferencia</button>
+ 216:             <div style="margin-top:6px;">
+ 217:               <span id="payLoading" style="display:none;">Procesando…</span>
+ 218:               <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
+ 219:             </div>
+ 220:         {% endif %}
+ 221:         <p class="muted" style="text-align:center; margin-top:.25rem;">
+ 222:           ID de pedido: <strong>#{{ order.id }}</strong>
+ 223:         </p>
+ 224:         <div style="text-align:center;">
+ 225:           <span id="payLoading" style="display:none;">Iniciando pagoâ€¦</span>
+ 226:           <div id="payError" style="display:none;color:#b00020;" aria-live="polite"></div>
+ 227:         </div>
+ 228:       </div>
+ 229:     </section>
+ 230:   </main>
+ 231: </body>
+ 232: </html>
+ 233: 
+ 234: 
+ 235: 
+ 236: 
+ 237: 
+ 238: 
+ 239: <script>
+ 240:   (function(){
+ 241:     var btn = document.getElementById('payNowBtn');
+ 242:     if(!btn) return;
+ 243:     function getCookie(name) {
+ 244:       const value = `; ${document.cookie}`;
+ 245:       const parts = value.split(`; ${name}=`);
+ 246:       if (parts.length === 2) return parts.pop().split(';').shift();
+ 247:     }
+ 248:     // replaced by enhanced handler below
+ 249:   })();
+ 250: </script>{% if order.estado != 'pagado' %}
+ 251: <script>
+ 252:   (function(){
+ 253:     const orderId = {{ order.id }};
+ 254:     let attempts = 0, maxAttempts = 20;
+ 255:     const badge = document.getElementById('estado-badge');
+ 256:     const payBtn = document.getElementById('payNowBtn');
+ 257:     function poll(){
+ 258:       fetch(/api/payments/status//, {credentials:'same-origin'})
+ 259:         .then(r => r.json())
+ 260:         .then(data => {
+ 261:           if(badge) badge.textContent = data.order_estado;
+ 262:           if(data.order_estado === 'pagado'){
+ 263:             if(payBtn) payBtn.disabled = true;
+ 264:             return;
+ 265:           }
+ 266:           if(++attempts < maxAttempts) setTimeout(poll, 3000);
+ 267:         })
+ 268:         .catch(()=>{ if(++attempts < maxAttempts) setTimeout(poll, 3000); });
+ 269:     }
+ 270:     poll();
+ 271:   })();
+ 272:   </script>
+ 273: {% endif %}
+ 274: 
+ 275: 
+ 276: <script>
+ 277: (function () {
+ 278:   function getCookie(name) {
+ 279:     const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+ 280:     return m ? m.pop() : '';
+ 281:   }
+ 282: 
+ 283:   const btn = document.getElementById('payNowBtn');
+ 284:   const spinner = document.getElementById('payLoading');
+ 285:   const err = document.getElementById('payError');
+ 286:   const badge = document.getElementById('estado-badge');
+ 287: 
+ 288:   if (!btn) return;
+ 289: 
+ 290:   let inFlight = false;
+ 291: 
+ 292:   async function startPayment(orderId) {
+ 293:     if (inFlight) return;
+ 294:     inFlight = true;
+ 295: 
+ 296:     if (err) err.style.display = 'none';
+ 297:     if (spinner) spinner.style.display = 'inline';
+ 298:     btn.disabled = true;
+ 299:     btn.setAttribute('aria-busy', 'true');
+ 300: 
+ 301:     try {
+ 302:       const resp = await fetch(`/api/payments/mp/start/${orderId}/`, {
+ 303:         method: 'POST',
+ 304:         headers: {
+ 305:           'X-CSRFToken': getCookie('csrftoken'),
+ 306:           'Accept': 'application/json'
+ 307:         },
+ 308:         credentials: 'same-origin'
+ 309:       });
+ 310: 
+ 311:       if (!resp.ok) {
+ 312:         const text = await resp.text();
+ 313:         throw new Error(`No se pudo iniciar el pago (${resp.status}). ${text || ''}`);
+ 314:       }
+ 315: 
+ 316:       const data = await resp.json();
+ 317:       if (!data.init_point) {
+ 318:         throw new Error('No se recibiÃ³ init_point desde el servidor.');
+ 319:       }
+ 320: 
+ 321:       window.location.href = data.init_point;
+ 322:     } catch (e) {
+ 323:       if (err) {
+ 324:         err.textContent = e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.';
+ 325:         err.style.display = 'block';
+ 326:       } else {
+ 327:         alert(e && e.message ? e.message : 'Error en la red. IntentÃ¡ nuevamente.');
+ 328:       }
+ 329:       btn.disabled = false;
+ 330:     } finally {
+ 331:       if (spinner) spinner.style.display = 'none';
+ 332:       btn.removeAttribute('aria-busy');
+ 333:       inFlight = false;
+ 334:     }
+ 335:   }
+ 336: 
+ 337:   btn.addEventListener('click', function () {
+ 338:     const orderId = this.getAttribute('data-order-id');
+ 339:     if (!orderId) return;
+ 340:     if (badge && badge.textContent.trim().toLowerCase() === 'pagado') {
+ 341:       this.disabled = true;
+ 342:       return;
+ 343:     }
+ 344:     startPayment(orderId);
+ 345:   });
+ 346: })();
+ 347: </script>
+ 348: 
+ 349: 
+ 350: 
+ 351: 
+ 352: 

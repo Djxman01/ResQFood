@@ -1,6 +1,7 @@
 
 from pathlib import Path
 import environ, os
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,6 +31,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
 
+    "whitenoise.runserver_nostatic",
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     "accounts",
     "packs",
     "payments",
+    "usuarios",
 
     # Django admin
     "django.contrib.admin",
@@ -52,20 +55,21 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
 
-
-
    
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware", 
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # ...
 ]
 
 ROOT_URLCONF = 'resqfood.urls'
@@ -82,6 +86,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'marketplace.context_processors.cart_badge',
+                'core.context_processors.reminders_cp',
             ],
         },
     },
@@ -138,6 +143,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -195,6 +201,14 @@ LOGOUT_REDIRECT_URL = "home" # adónde ir después de salir
 # Emails a consola (para password reset)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Images: stock vs media
+# Use stock images when real image is missing
+USE_STOCK_IMAGES_FOR_EMPTY = True
+# Root under static/ for stock assets
+STOCK_IMAGE_ROOT = "img/stock"
+# NEW: force stock everywhere (ignore media files)
+USE_STOCK_IMAGES_FORCE_STOCK = True
+
 # Mensajes (ya viene activo por defecto, pero mostraremos el bloque en base.html)
 from django.contrib.messages import constants as messages
 MESSAGE_TAGS = {
@@ -204,3 +218,29 @@ MESSAGE_TAGS = {
     messages.WARNING: "warning",
     messages.ERROR: "error",
 }
+
+# Reminder settings
+REMINDER_ENABLED = True
+REMINDER_WINDOW_MINUTES = int(os.getenv("REMINDER_WINDOW_MINUTES", "120"))
+REMINDER_EMAIL_SENDER = os.getenv("REMINDER_EMAIL_SENDER", "notificaciones@resqfood.local")
+
+# For development you can send emails to console
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+USE_STOCK_IMAGES_PREFER_STOCK = True
+
+
+# Static & media
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # ya lo usaste para las fotos stock
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+
+if DEBUG:
+    # In desarrollo servimos estáticos sin manifest ni compresión previa
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+else:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

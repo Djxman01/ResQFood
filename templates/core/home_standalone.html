@@ -1,0 +1,110 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ResQFood â€” DescubrÃ­ packs cerca</title>
+  {% load static %}
+  <style>
+    html,body{background:#ffffff;color:#0f172a;margin:0;font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial;}
+    .wrap{max-width:1100px;margin:16px auto;padding:0 16px;}
+    .hero{display:flex;flex-direction:column;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px;}
+    .hero h1{margin:0;font-size:1.6rem;font-weight:800;}
+    .hero p{margin:0;color:#6b7280}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+    @media(min-width:768px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;transition:.15s ease; text-decoration:none; color:inherit; display:block}
+    .card:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(0,0,0,.08);}
+    .thumb{width:100%;display:block;background:#f3f4f6;aspect-ratio:4/3;object-fit:cover;}
+    .card-body{padding:10px 12px;}
+    .title{font-weight:800;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .meta{color:#6b7280;font-size:.92rem;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+    .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;text-decoration:none;}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;background:#fff;text-decoration:none;color:#111827;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>ResQFood</h1>
+      <p>DescubrÃ­ packs con descuento en comercios cercanos. AhorrÃ¡ y evitÃ¡ desperdicios.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <a class="btn" href="/packs/">Ver packs</a>
+        <a class="pill" href="/categoria/verduleria/">VerdulerÃ­as</a>
+        <a class="pill" href="/categoria/restaurantes/">Restaurantes</a>
+        <a class="pill" href="/categoria/cafes/">CafÃ©s</a>
+        <a class="pill" href="/categoria/supermercados/">Supermercados</a>
+      </div>
+    </div>
+
+    {% if expiring_orders %}
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:8px 10px;margin:12px 0;">
+        â° TenÃ©s reservas por vencer. Revisalas en <a href="/mis-reservas/">Mis pedidos</a>.
+      </div>
+    {% endif %}
+
+    <h2 style="margin:14px 0 8px;">Novedades</h2>
+    <div class="grid">
+      {% for p in newest %}
+        <a class="card" href="/packs/{{ p.id }}/">
+          {% if p.imagen %}
+            <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async">
+          {% else %}
+            <img class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+          {% endif %}
+          <div class="card-body">
+            <p class="title">{{ p.titulo|default:"Pack" }}</p>
+            <div class="meta">
+              <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+              <span>{{ p.partner.nombre }}</span>
+            </div>
+          </div>
+        </a>
+      {% empty %}
+        <div style="grid-column:1/-1;color:#6b7280;">No hay packs disponibles por ahora.</div>
+      {% endfor %}
+    </div>
+
+    <h2 style="margin:16px 0 8px;">MÃ¡s comprados</h2>
+    <div class="grid">
+      {% for p in most_bought %}
+        <a class="card" href="/packs/{{ p.id }}/">
+          {% if p.imagen %}
+            <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async">
+          {% else %}
+            <img class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+          {% endif %}
+          <div class="card-body">
+            <p class="title">{{ p.titulo|default:"Pack" }}</p>
+            <div class="meta">
+              <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+              <span>{{ p.partner.nombre }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    <h2 style="margin:16px 0 8px;">Ofertas</h2>
+    <div class="grid">
+      {% for p in offers %}
+        <a class="card" href="/packs/{{ p.id }}/">
+          {% if p.imagen %}
+            <img class="thumb" src="{{ p.image_or_stock_url }}" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async">
+          {% else %}
+            <img class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+          {% endif %}
+          <div class="card-body">
+            <p class="title">{{ p.titulo|default:"Pack" }}</p>
+            <div class="meta">
+              <span>${{ p.precio_oferta|default:p.precio_original }}</span>
+              <span>{{ p.partner.nombre }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>
+

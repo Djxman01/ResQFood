@@ -1,0 +1,153 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ meta_title }}{% endblock %}
+
+{% block content %}
+<style>
+  .wrap{max-width:1100px;margin:16px auto;padding:0 16px;}
+  .grid{display:grid;gap:16px;grid-template-columns:1fr;}
+  @media(min-width:980px){.grid{grid-template-columns:1.1fr .9fr;}}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;}
+  .pad{padding:12px;}
+  .title{margin:0 0 6px;font-size:1.4rem;font-weight:800;}
+  .muted{color:#6b7280;}
+  .price{font-weight:900;font-size:1.4rem;}
+  .price s{color:#9ca3af;font-weight:500;margin-left:6px;}
+  .badge{font-size:.85rem;border-radius:999px;padding:4px 8px;border:1px solid #e5e7eb;}
+  .b-ok{background:#ecfdf5;border-color:#86efac;}
+  .b-warn{background:#fffbeb;border-color:#fde68a;}
+  .b-err{background:#fef2f2;border-color:#fecaca;}
+  .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;display:block;background:#f3f4f6;}
+  .thumb-sm{width:84px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .cta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  .btn{border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;}
+  .btn.secondary{background:#fff;color:#2563eb;}
+  .rel-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);} 
+  @media(min-width:900px){.rel-grid{grid-template-columns:repeat(4,1fr);}}
+</style>
+
+<div class="wrap" itemscope itemtype="https://schema.org/Product">
+  <meta itemprop="name" content="{{ pack.titulo }}">
+  <meta itemprop="brand" content="{{ pack.partner.nombre }}">
+  <div itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+    <meta itemprop="priceCurrency" content="ARS">
+    <meta itemprop="price" content="{{ price_show }}">
+    <meta itemprop="availability" content="{% if pack.stock > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}">
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      {% if pack.imagen %}
+        <img id="heroImg" class="thumb" src="{{ pack.image_or_stock_url }}" alt="{{ pack.titulo }}" loading="eager" decoding="async">
+      {% else %}
+        <img id="heroImg" class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true">
+      {% endif %}
+      <div class="pad thumbs">
+        {% if pack.imagen %}
+          <img class="thumb-sm" src="{{ pack.image_or_stock_url }}" alt="Vista 1" onclick="swapHero(this.src)">
+        {% endif %}
+        <img class="thumb-sm" src="{% static 'img/placeholder-pack.svg' %}" alt="Vista 2" onclick="swapHero(this.src)">
+        <img class="thumb-sm" src="{% static 'img/placeholder-pack.svg' %}" alt="Vista 3" onclick="swapHero(this.src)">
+      </div>
+    </div>
+
+    <div class="card pad">
+      <h1 class="title" itemprop="name">{{ pack.titulo }}</h1>
+      <div class="muted">{{ pack.partner.nombre }}</div>
+      <div style="margin-top:6px;">
+        {% if pack.precio_oferta and pack.precio_oferta < pack.precio_original %}
+          <span class="price">${{ pack.precio_oferta }}</span><s>${{ pack.precio_original }}</s>
+          <span class="badge b-ok">Oferta</span>
+        {% else %}
+          <span class="price">${{ pack.precio_original }}</span>
+        {% endif %}
+        {% if pack.stock <= 0 %}
+          <span class="badge b-err">Sin stock</span>
+        {% elif pack.stock < 5 %}
+          <span class="badge b-warn">Â¡Quedan {{ pack.stock }}!</span>
+        {% else %}
+          <span class="badge">Stock: {{ pack.stock }}</span>
+        {% endif %}
+      </div>
+
+      <div style="margin-top:10px;">
+        <div class="muted">Retiro: {{ pack.pickup_start|date:"d/m H:i" }} â€“ {{ pack.pickup_end|date:"H:i" }}</div>
+        <div id="countdown" class="muted"></div>
+      </div>
+
+      <div class="cta">
+        {% if pending_order %}
+          <a class="btn" href="/orders/{{ pending_order.id }}/?from=pack">Continuar pago</a>
+          {% if last_payment and last_payment.status == "pending" %}
+            <span class="muted">Pago pendienteâ€¦</span>
+          {% endif %}
+        {% else %}
+          <button id="addBtn" type="button" class="btn" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
+        {% endif %}
+        <a class="btn secondary" href="/c/{{ pack.partner.slug|default:pack.partner.id }}/">Ver comercio</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <h2>TambiÃ©n te puede interesar</h2>
+    <div class="rel-grid">
+      {% for r in related %}
+        <a class="card link" href="/packs/{{ r.id }}/">
+          {% if r.imagen %}
+            <img class="thumb" src="{{ r.image_or_stock_url }}" alt="{{ r.titulo }}" loading="lazy" decoding="async">
+          {% else %}
+            <img class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true">
+          {% endif %}
+          <div class="pad">
+            <p class="title">{{ r.titulo }}</p>
+            <div class="muted">
+              ${{ r.precio_oferta|default:r.precio_original }}
+              {% if r.precio_oferta and r.precio_oferta < r.precio_original %}<s>${{ r.precio_original }}</s>{% endif %}
+            </div>
+          </div>
+        </a>
+      {% empty %}
+        <div class="muted">Sin mÃ¡s packs de este comercio por ahora.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+function swapHero(src){ const img = document.getElementById('heroImg'); if(img) img.src = src; }
+(function(){
+  const el = document.getElementById('countdown');
+  if(el){
+    const end = new Date("{{ pack.pickup_end|date:'Y-m-d H:i:s' }}".replace(' ','T'));
+    function tick(){
+      const now = new Date();
+      const diff = end - now;
+      if(diff <= 0){ el.textContent = 'Ventana de retiro finalizada'; return; }
+      const h = Math.floor(diff/3.6e6);
+      const m = Math.floor((diff%3.6e6)/6e4);
+      el.textContent = 'Termina en ' + h + 'h ' + m + 'm';
+      setTimeout(tick, 60000);
+    }
+    tick();
+  }
+
+  const btn = document.getElementById('addBtn');
+  function getCookie(name){ const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return m?m.pop():''; }
+  if(btn){
+    btn.addEventListener('click', async function(){
+      if(btn.disabled) return;
+      btn.disabled = true; const old=btn.textContent; btn.textContent='Agregando...';
+      try{
+        const res = await fetch('/api/cart/add/', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin', body: JSON.stringify({ pack_id: {{ pack.id }} }) });
+        if(res.ok){ btn.textContent='Â¡Agregado!'; setTimeout(()=>location.href='/cart/', 500); }
+        else { btn.textContent='Error, reintentar'; btn.disabled=false; }
+      }catch(e){ btn.textContent='Error, reintentar'; btn.disabled=false; }
+    });
+  }
+})();
+</script>
+{% endblock %}
+

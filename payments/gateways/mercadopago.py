@@ -1,9 +1,11 @@
-try:
+﻿try:
     import mercadopago  # type: ignore
 except Exception:  # pragma: no cover
     mercadopago = None  # lazy-loaded / mocked in tests
 from django.conf import settings
 from decimal import Decimal
+from json import dumps as json_dumps
+
 
 
 
@@ -31,7 +33,7 @@ def create_mp_preference(order):
     numeric_types = (int, float, Decimal)
     price = next((v for v in cand if isinstance(v, numeric_types) and float(v) > 0), None)
     if price is None:
-        # Permite string numérica
+        # Permite string numÃ©rica
         cand_str = next((v for v in cand if isinstance(v, str) and v.strip()), None)
         if cand_str is not None:
             try:
@@ -73,13 +75,14 @@ def create_mp_preference(order):
         "back_urls": back_urls,
     }
 
-    # auto_return SOLO si hay success real
-    if back_urls.get("success"):
+    # auto_return SOLO si hay success real; usar solo con https para evitar 400 en dev/local
+    success_url = back_urls.get("success")
+    if success_url and success_url.startswith("https://"):
         pref_body["auto_return"] = "approved"
 
-    # notification_url SOLO si es pública (no localhost)
+    # notification_url SOLO si es publica (no localhost ni placeholder)
     notif = clean_url(getattr(settings, "MP_NOTIFICATION_URL", ""))
-    if notif.startswith("http") and "localhost" not in notif:
+    if notif.startswith("http") and "localhost" not in notif and "example.com" not in notif:
         pref_body["notification_url"] = notif
 
     # (Opcional) log DEV
@@ -92,6 +95,8 @@ def create_mp_preference(order):
     import logging
     logging.getLogger(__name__).info("MP pref body: %s", pref_body)
 
+    print("DEBUG MP back_urls:", back_urls)
+    print("DEBUG MP pref_body:", json_dumps(pref_body, ensure_ascii=False))
     resp = sdk.preference().create(pref_body)
     data = resp.get("response", {}) if isinstance(resp, dict) else {}
     # If Mercado Pago returned an error payload or missing id, surface a clear message

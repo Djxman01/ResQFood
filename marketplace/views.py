@@ -28,6 +28,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Max
 from django.http import Http404
 from django.db.models import F, Count
+from marketplace.services.reminders import pending_orders_expiring
 
 class PartnerViewSet(viewsets.ModelViewSet):
     queryset = Partner.objects.all()
@@ -219,7 +220,7 @@ class MisReservasView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["now"] = timezone.now()
-        return ctxx
+        return ctx
     
    
 class OrderDetailView(LoginRequiredMixin, DetailView):
@@ -250,6 +251,15 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
                 "paid_at": None,
                 "created_at": None,
             }
+        # Reminder banner: show if pending and expiring in window
+        try:
+            o = self.object
+            is_exp = False
+            if o.estado == "pendiente" and self.request.user.is_authenticated:
+                is_exp = pending_orders_expiring(user=self.request.user).filter(id=o.id).exists()
+            ctx["is_expiring"] = bool(is_exp)
+        except Exception:
+            ctx["is_expiring"] = False
         return ctx
 
 
@@ -302,6 +312,106 @@ def my_orders(request):
         "orden": orden,
     }
     return render(request, "marketplace/my_orders.html", ctx)
+
+
+# --- Categoría de packs (/categoria/<slug>/) ---
+from django.http import Http404
+
+CATEGORY_LABELS = {
+    "restaurantes": "Restaurantes",
+    "restaurante": "Restaurantes",
+    "cafes": "Cafés",
+    "cafe": "Cafés",
+    "verduleria": "Verdulerías",
+    "verdulerias": "Verdulerías",
+    "carniceria": "Carnicerías",
+    "carnicerias": "Carnicerías",
+    "supermercados": "Supermercados",
+    "supermercado": "Supermercados",
+    "panaderia": "Panaderías",
+    "panaderias": "Panaderías",
+    "kiosco": "Kioscos",
+    "kioscos": "Kioscos",
+}
+
+# Mapear slug recibido -> valor real en Partner.categoria
+_CAT_VALUE = {
+    "restaurantes": "restaurante",
+    "restaurante": "restaurante",
+    "cafes": "cafe",
+    "cafe": "cafe",
+    "verduleria": "verduleria",
+    "verdulerias": "verduleria",
+    "supermercados": "supermercado",
+    "supermercado": "supermercado",
+    "kiosco": "kiosco",
+    "kioscos": "kiosco",
+    # Si tu modelo no tiene carniceria/panaderia, permitir 404 amigable
+    "carniceria": None,
+    "carnicerias": None,
+    "panaderia": None,
+    "panaderias": None,
+}
+
+
+def categoria_list(request, slug: str):
+    slug = (slug or "").strip().lower()
+    titulo = CATEGORY_LABELS.get(slug)
+    if not titulo:
+        raise Http404("Categoría no encontrada")
+    cat_value = _CAT_VALUE.get(slug)
+    if not cat_value:
+        # Si la categoría no existe en el modelo, devolver 404 clara
+        raise Http404("Categoría no disponible")
+
+    now = timezone.now()
+    qs = Pack.objects.select_related("partner").filter(partner__categoria=cat_value)
+
+    oferta = request.GET.get("oferta") == "1"
+    stock = request.GET.get("stock") == "1"
+    abierto = request.GET.get("abierto") == "1"
+
+    if oferta:
+        qs = qs.filter(precio_oferta__lt=F("precio_original"))
+    if stock:
+        qs = qs.filter(stock__gt=0)
+    if abierto:
+        qs = qs.filter(pickup_start__lte=now, pickup_end__gte=now)
+
+    orden = (request.GET.get("orden") or "nuevo").strip()
+    if orden == "precio-asc":
+        qs = qs.order_by(
+            F("precio_oferta").asc(nulls_last=True),
+            F("precio_original").asc(nulls_last=True),
+            "-creado_at",
+        )
+    elif orden == "precio-desc":
+        qs = qs.order_by(
+            F("precio_oferta").desc(nulls_last=True),
+            F("precio_original").desc(nulls_last=True),
+            "-creado_at",
+        )
+    elif orden == "mas-comprado":
+        try:
+            qs = qs.annotate(n=Count("orders")).order_by("-n", "-creado_at")
+        except Exception:
+            qs = qs.order_by("-creado_at")
+    else:
+        qs = qs.order_by("-creado_at")
+
+    page = Paginator(qs, 24).get_page(request.GET.get("page"))
+    ctx = {
+        "slug": slug,
+        "titulo": titulo,
+        "page": page,
+        "f_oferta": oferta,
+        "f_stock": stock,
+        "f_abierto": abierto,
+        "orden": orden,
+        "meta_title": f"{titulo} — ResQFood",
+        "meta_desc": f"Packs en {titulo}. Ofertas, stock y horarios de retiro.",
+    }
+    return render(request, "marketplace/categoria_list.html", ctx)
 
 
 def partner_detail(request, slug_or_id):

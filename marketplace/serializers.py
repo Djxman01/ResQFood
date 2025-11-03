@@ -5,40 +5,58 @@ from django.contrib.auth import get_user_model
 
 class PartnerSerializer(serializers.ModelSerializer):
     imagen_url = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
     class Meta:
         model = Partner
-        fields = ["id", "nombre", "categoria", "imagen_url"]
+        fields = ["id", "nombre", "categoria", "imagen_url", "image_url"]
 
     def get_imagen_url(self, obj):
-        if not obj.imagen:
-            return None
-        request = self.context.get("request")
-        url = obj.imagen.url
-        return request.build_absolute_uri(url) if request else url
+        # Legacy: real media URL if present
+        try:
+            if getattr(obj, "imagen", None) and obj.imagen and obj.imagen.name and obj.imagen.storage.exists(obj.imagen.name):
+                request = self.context.get("request")
+                url = obj.imagen.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            pass
+        return None
+
+    def get_image_url(self, obj):
+        return obj.image_or_stock_url
 
 class PackSerializer(serializers.ModelSerializer):
     partner_nombre = serializers.CharField(source="partner.nombre", read_only=True)
     partner_imagen_url = serializers.SerializerMethodField()
-    imagen_url = serializers.SerializerMethodField()
+    imagen_url = serializers.SerializerMethodField()  # legacy media
+    image_url = serializers.SerializerMethodField()   # stock-aware
 
     class Meta:
         model = Pack
-        fields = ["id","partner","partner_nombre","titulo","etiqueta","precio_original","imagen_url","partner_imagen_url",
+        fields = ["id","partner","partner_nombre","titulo","etiqueta","precio_original","imagen_url","image_url","partner_imagen_url",
                   "precio_oferta","stock","pickup_start","pickup_end","creado_at"]
         
     def get_imagen_url(self, obj):
-        if not obj.imagen:
-            return None
-        request = self.context.get("request")
-        url = obj.imagen.url
-        return request.build_absolute_uri(url) if request else url
+        try:
+            if getattr(obj, "imagen", None) and obj.imagen and obj.imagen.name and obj.imagen.storage.exists(obj.imagen.name):
+                request = self.context.get("request")
+                url = obj.imagen.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            pass
+        return None
+
+    def get_image_url(self, obj):
+        return obj.image_or_stock_url
 
     def get_partner_imagen_url(self, obj):
-        if not getattr(obj.partner, "imagen", None):
-            return None
-        request = self.context.get("request")
-        url = obj.partner.imagen.url
-        return request.build_absolute_uri(url) if request else url
+        try:
+            if getattr(obj.partner, "imagen", None) and obj.partner.imagen and obj.partner.imagen.name and obj.partner.imagen.storage.exists(obj.partner.imagen.name):
+                request = self.context.get("request")
+                url = obj.partner.imagen.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            pass
+        return obj.partner.image_or_stock_url
 
     def validate(self, attrs):
         # Merge instance values on partial updates to compare effective values
@@ -105,7 +123,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderLiteSerializer(serializers.ModelSerializer):
     pack_titulo = serializers.CharField(source="pack.titulo", read_only=True)
     partner_nombre = serializers.CharField(source="pack.partner.nombre", read_only=True)
-    imagen = serializers.ImageField(source="pack.imagen", read_only=True)
+    imagen = serializers.SerializerMethodField()
     pickup_start = serializers.DateTimeField(source="pack.pickup_start", read_only=True)
     pickup_end = serializers.DateTimeField(source="pack.pickup_end", read_only=True)
 
@@ -117,6 +135,9 @@ class OrderLiteSerializer(serializers.ModelSerializer):
             "pickup_start", "pickup_end"
         ]
 
+
+    def get_imagen(self, obj):
+        return obj.pack.image_or_stock_url
 
 User = get_user_model()
 

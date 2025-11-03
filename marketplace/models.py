@@ -4,6 +4,7 @@
 # marketplace/models.py
 from django.db import models
 from django.conf import settings
+from marketplace.utils.images import stock_image_url
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
@@ -48,6 +49,26 @@ class Partner(models.Model):
             .distinct()
         )
 
+    @property
+    def image_or_stock_url(self):
+        # Force stock if flag is enabled
+        if getattr(settings, "USE_STOCK_IMAGES_FORCE_STOCK", False):
+            slug = getattr(self, "categoria", "otros")
+            return stock_image_url(slug, self.nombre or getattr(self, "slug", "") or str(self.pk))
+
+        # Otherwise prefer real media if file exists
+        if getattr(self, "imagen", None) and self.imagen:
+            try:
+                if self.imagen.name and self.imagen.storage.exists(self.imagen.name):
+                    return self.imagen.url
+            except Exception:
+                pass
+
+        if getattr(settings, "USE_STOCK_IMAGES_FOR_EMPTY", True):
+            slug = getattr(self, "categoria", "otros")
+            return stock_image_url(slug, self.nombre or getattr(self, "slug", "") or str(self.pk))
+        return ""
+
 class Pack(models.Model):
     class Etiqueta(models.TextChoices):
         POR_VENCER = "por_vencer", "Por vencer"
@@ -67,6 +88,26 @@ class Pack(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.partner.nombre}"
+
+    @property
+    def image_or_stock_url(self):
+        if getattr(settings, "USE_STOCK_IMAGES_FORCE_STOCK", False):
+            slug = getattr(self.partner, "categoria", "otros")
+            key = f"{self.titulo}-{getattr(self.partner, 'nombre', '')}-{self.pk}"
+            return stock_image_url(slug, key)
+
+        if getattr(self, "imagen", None) and self.imagen:
+            try:
+                if self.imagen.name and self.imagen.storage.exists(self.imagen.name):
+                    return self.imagen.url
+            except Exception:
+                pass
+
+        if getattr(settings, "USE_STOCK_IMAGES_FOR_EMPTY", True):
+            slug = getattr(self.partner, "categoria", "otros")
+            key = f"{self.titulo}-{getattr(self.partner, 'nombre', '')}-{self.pk}"
+            return stock_image_url(slug, key)
+        return ""
 
 # marketplace/models.py
 class Order(models.Model):

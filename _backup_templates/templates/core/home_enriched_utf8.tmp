@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<style>
+  .filters { max-width:1100px; margin: 8px auto 16px; padding: 0 16px; }
+  .pills { display:flex; gap:8px; flex-wrap: wrap; }
+  .pill { border:1px solid #e5e7eb; border-radius:999px; padding:6px 10px; background:#fff; cursor:pointer; font-size:.92rem; text-decoration:none; color:inherit; }
+  .pill.active { background:#111827; color:#fff; border-color:#111827; }
+  .seg { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .select { border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; font-size:.92rem; }
+</style>
+
+<div class="filters" id="filters">
+  <div class="pills">
+    
+
+    {% for c in filter_state.categories %}
+      {% if filter_state.categoria == c.slug %}
+        <a class="pill active" href="{% url 'home' %}?{{ request.GET.urlencode|cut:'categoria='|cut:c.slug }}">{{ c.title }}</a>
+      {% else %}
+        <a class="pill" href="{% url 'home' %}?categoria={{ c.slug }}&{{ request.GET.urlencode }}">{{ c.title }}</a>
+      {% endif %}
+    {% endfor %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const sel = document.getElementById('ordenSel');
+  if (!sel) return;
+  sel.addEventListener('change', () => {
+    const sp = new URLSearchParams(window.location.search);
+    sp.set('orden', sel.value);
+    window.location.search = sp.toString();
+  });
+})();
+</script>
+<style>
+  .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
+  .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
+  .grid-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 640px) { .grid-tiles { grid-template-columns: repeat(4, 1fr) !important; } }
+  @media (min-width: 1024px){ .grid-tiles { grid-template-columns: repeat(8, 1fr) !important; } }
+  .tile { display:flex; align-items:center; justify-content:center; flex-direction:column; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; text-align:center; transition: transform .15s ease, box-shadow .15s ease; text-decoration: none; color: inherit; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+  .tile .icon { font-size: 1.6rem; }
+  .tile .t { margin-top:8px; font-weight:600; font-size:.95rem; color:#111827; }
+
+  .grid-cards { display:grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 768px){ .grid-cards { grid-template-columns: repeat(3, 1fr) !important; } }
+  @media (min-width: 1100px){ .grid-cards { grid-template-columns: repeat(4, 1fr) !important; } }
+  .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; transition: box-shadow .15s ease, transform .15s ease; text-decoration:none; color:inherit; }
+  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); transform: translateY(-2px); }
+  .thumb { aspect-ratio: 4/3; background:#f3f4f6; display:block; width:100%; object-fit:cover; }
+  .card-body { padding: 10px 12px; }
+  .title { font-weight: 600; font-size: .98rem; color:#111827; margin:0 0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .meta { color:#6b7280; font-size:.88rem; display:flex; justify-content:space-between; }
+  .price { font-weight:700; color:#111827; }
+  .price s { color:#9ca3af; font-weight:500; margin-left:6px; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .see-all { color:#2563eb; font-weight:600; font-size:.9rem; text-decoration:none; }
+  /* Carrusel */
+  .carousel { position: relative; overflow: hidden; }
+  .carousel-track { display: grid; grid-auto-flow: column; grid-auto-columns: 80%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding-bottom: 6px; }
+  .carousel-track:focus { outline: 2px solid #2563eb; outline-offset: 2px; }
+  .carousel-track::-webkit-scrollbar { height: 8px; }
+  .carousel-track::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 999px; }
+  @media (min-width: 640px) { .carousel-track { grid-auto-columns: 50% !important; } }
+  @media (min-width: 1024px){ .carousel-track { grid-auto-columns: 25% !important; } }
+  .carousel-item { scroll-snap-align: start; }
+  .carousel-nav { position: absolute; top: 40%; left: 0; right: 0; display: flex; justify-content: space-between; pointer-events: none; }
+  .carousel-btn { pointer-events: all; border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; width: 36px; height: 36px; display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0,0,0,.08); cursor: pointer; }
+  .carousel-btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .thumb { aspect-ratio: 4/3; object-fit: cover; width: 100%; display: block; }
+</style>
+
+<!-- CategorÃ­as -->
+<section class="section">
+  <div class="section-header">
+    <h2>Explorar categorÃ­as</h2>
+    <a class="see-all" href="/packs/">Ver todo</a>
+  </div>
+  <div class="grid-tiles">
+    {% for c in categories %}
+      <a class="tile" href="/packs/?categoria={{ c.slug }}">
+        <div class="icon">{{ c.icon }}</div>
+        <div class="t">{{ c.title }}</div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section" aria-labelledby="h-nuevo">
+  <div class="section-header">
+    <h2 id="h-nuevo">Lo mÃ¡s nuevo</h2>
+    <a class="see-all" href="/packs/?orden=nuevo">Ver mÃ¡s</a>
+  </div>
+  <div class="carousel" data-carousel="newest">
+    <div class="carousel-track" id="track-newest" tabindex="0" role="region" aria-label="Carrusel: Lo mÃ¡s nuevo">
+      {% for p in newest %}
+        <div class="carousel-item">
+          <a class="link card" href="/packs/{{ p.id }}/">
+            {% if p.imagen %}
+            <picture>
+              <img class="thumb" src="{{ p.image_or_stock_url }}" srcset="{{ p.image_or_stock_url }} 1024w" sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 24vw" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" fetchpriority="low" data-placeholder="{% static 'img/placeholder-pack.jpg' %}">
+            </picture>
+            {% else %}
+              <img class="thumb" src="{% static 'img/placeholder-pack.jpg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+            {% endif %}
+          <div class="card-body">
+              <p class="title">{{ p.titulo|default:"Pack" }}</p>
+              <div class="meta">
+                <span class="price">
+                  ${{ p.precio_oferta|default:p.precio_original }}
+                  {% if p.precio_oferta and p.precio_oferta < p.precio_original %}
+                    <s>${{ p.precio_original }}</s>
+                  {% endif %}
+                </span>
+                <span>{{ p.partner.nombre|default:"" }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% empty %}
+        <div class="muted">Sin novedades por ahora.</div>
+      {% endfor %}
+    </div>
+    <div class="carousel-nav" aria-hidden="false">
+      <button class="carousel-btn" data-prev="track-newest" aria-label="Anterior" title="Anterior">â€¹</button>
+      <button class="carousel-btn" data-next="track-newest" aria-label="Siguiente" title="Siguiente">â€º</button>
+    </div>
+  </div>
+  
+</section>
+
+<section class="section" aria-labelledby="h-mas">
+  <div class="section-header">
+    <h2 id="h-mas">Lo mÃ¡s comprado</h2>
+    <a class="see-all" href="/packs/?orden=mas-comprado">Ver mÃ¡s</a>
+  </div>
+  <div class="carousel" data-carousel="most">
+    <div class="carousel-track" id="track-most" tabindex="0" role="region" aria-label="Carrusel: Lo mÃ¡s comprado">
+      {% for p in most_bought %}
+        <div class="carousel-item">
+          <a class="link card" href="/packs/{{ p.id }}/">
+            {% if p.imagen %}
+            <picture>
+              <img class="thumb" src="{{ p.image_or_stock_url }}" srcset="{{ p.image_or_stock_url }} 1024w" sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 24vw" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" fetchpriority="low" data-placeholder="{% static 'img/placeholder-pack.jpg' %}">
+            </picture>
+            {% else %}<img class="thumb" src="{% static 'img/placeholder-pack.jpg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">{% endif %}
+            <div class="card-body">
+              <p class="title">{{ p.titulo|default:"Pack" }}</p>
+              <div class="meta">
+                <span class="price">${{ p.precio_oferta|default:p.precio_original }}</span>
+                <span>{{ p.n|default:0 }} ventas</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% empty %}
+        <div class="muted">AÃºn no hay mÃ¡s comprados.</div>
+      {% endfor %}
+    </div>
+    <div class="carousel-nav">
+      <button class="carousel-btn" data-prev="track-most" aria-label="Anterior" title="Anterior">â€¹</button>
+      <button class="carousel-btn" data-next="track-most" aria-label="Siguiente" title="Siguiente">â€º</button>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="h-offers">
+  <div class="section-header">
+  </div>
+  <div class="carousel" data-carousel="offers">
+      {% for p in offers %}
+        <div class="carousel-item">
+          <a class="link card" href="/packs/{{ p.id }}/">
+            {% if p.imagen %}
+            <picture>
+              <img class="thumb" src="{{ p.image_or_stock_url }}" srcset="{{ p.image_or_stock_url }} 1024w" sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 24vw" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" fetchpriority="low" data-placeholder="{% static 'img/placeholder-pack.jpg' %}">
+            </picture>
+            {% else %}<img class="thumb" src="{% static 'img/placeholder-pack.jpg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">{% endif %}
+            <div class="card-body">
+              <p class="title">{{ p.titulo|default:"Pack" }}</p>
+              <div class="meta">
+                <span class="price">${{ p.precio_oferta }} <s>${{ p.precio_original }}</s></span>
+                <span>{{ p.partner.nombre|default:"" }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% empty %}
+      {% endfor %}
+    </div>
+    <div class="carousel-nav">
+      <button class="carousel-btn" data-prev="track-offers" aria-label="Anterior" title="Anterior">â€¹</button>
+      <button class="carousel-btn" data-next="track-offers" aria-label="Siguiente" title="Siguiente">â€º</button>
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function attachCarousel(trackId){
+    const track = byId(trackId);
+    if (!track) return;
+    const prev = document.querySelector(`[data-prev="${trackId}"]`);
+    const next = document.querySelector(`[data-next="${trackId}"]`);
+    const itemWidth = () => {
+      const f = track.querySelector('.carousel-item');
+      if (!f) return 300;
+      const r = f.getBoundingClientRect();
+      return r.width + 12;
+    };
+    function go(delta){ track.scrollBy({ left: delta * itemWidth(), behavior: 'smooth' }); }
+    prev && prev.addEventListener('click', () => go(-1));
+    next && next.addEventListener('click', () => go(+1));
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(+1); }
+    });
+    function toggleButtons(){
+      if (!prev || !next) return;
+      prev.disabled = track.scrollLeft <= 0;
+      const max = track.scrollWidth - track.clientWidth - 4;
+      next.disabled = track.scrollLeft >= max;
+    }
+    track.addEventListener('scroll', toggleButtons, { passive: true });
+    window.addEventListener('resize', toggleButtons);
+    window.addEventListener('pageshow', toggleButtons);
+    setTimeout(toggleButtons, 0);
+  }
+  attachCarousel('track-newest');
+  attachCarousel('track-most');
+  attachCarousel('track-offers');
+})();
+</script>
+{% endblock %}
+
