@@ -86,7 +86,7 @@
             <span class="muted">Pago pendiente…</span>
           {% endif %}
         {% else %}
-          <button id="addBtn" type="button" class="pbtn" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
+          <button id="addBtn" type="button" class="pbtn" onclick="return addToCartPack(event)" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
         {% endif %}
         <a class="pbtn secondary" href="/c/{{ pack.partner.slug|default:pack.partner.id }}/">Ver comercio</a>
       </div>
@@ -135,16 +135,7 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
   const btn = document.getElementById('addBtn');
   function getCookie(name){ const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return m?m.pop():''; }
   if(btn){
-    btn.addEventListener('click', async function(){
-      if(btn.disabled) return;
-      btn.disabled = true; const old=btn.textContent; btn.textContent='Agregando...';
-      try{
-        const res = await fetch('/api/cart/add/', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin', body: JSON.stringify({ pack_id: {{ pack.id }} }) });
-        if(res.ok){ btn.textContent='¡Agregado!'; setTimeout(()=>location.href='/cart/', 500); }
-        else { btn.textContent='Error, reintentar'; btn.disabled=false; }
-      }catch(e){ btn.textContent='Error, reintentar'; btn.disabled=false; }
-    });
-  }
+  // click handler inline via addToCartPack, removed legacy listener
   // Fallback aleatorio para imágenes rotas o placeholder
   const STOCK_POOL = [
     "{% static 'img/stock/verduleria/1.jpg' %}",
@@ -159,9 +150,50 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
     img.addEventListener('error', function(){ img.src = pick(); }, { once:true });
     try{ if((img.currentSrc||img.src||'').includes('placeholder-pack.svg')) img.src = pick(); }catch(e){}
   });
+  window.addToCartPack = async function(ev){
+    if(ev) ev.preventDefault();
+    const btn = document.getElementById('addBtn');
+    function getCookie(name){ const m=document.cookie.match('(^|;)\s*'+name+'\s*=\s*([^;]+)'); return m?m.pop():''; }
+    if(!btn) return false;
+    if(btn.disabled) return false;
+    const old=btn.textContent; btn.disabled=true; btn.textContent='Agregando...';
+    try{
+      const res = await fetch('/api/cart/add/', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        credentials:'same-origin',
+        body: JSON.stringify({ pack_id: {{ pack.id }} })
+      });
+      const data = await res.json().catch(()=>({}));
+      if (res.status === 401 || res.status === 403){
+        window.location = '{% url "login" %}?next={{ request.path|urlencode }}';
+        return false;
+      }
+      if(!res.ok){
+        const msg = (data && data.detail) ? data.detail : 'No se pudo agregar.';
+        if(/mismo comercio/i.test(msg)){
+          if(confirm(msg + "\n\nVaciar carrito e intentar de nuevo?")){
+            await fetch('/api/cart/clear/', { method:'POST', headers:{ 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin' });
+            btn.disabled=false; btn.click(); return false;
+          }
+        }
+        alert(msg); btn.textContent=old; btn.disabled=false; return false;
+      }
+      if(window.updateCartBadge && typeof data.item_count !== 'undefined') updateCartBadge(data.item_count);
+      btn.textContent='¡Agregado!'; setTimeout(()=>location.href='/cart/', 400);
+      return false;
+    }catch(e){ btn.textContent=old; btn.disabled=false; alert('Error de red'); return false; }
+  }
 })();
 </script>
 {% endblock %}
+
+
+
+
+
+
+
 
 
 
