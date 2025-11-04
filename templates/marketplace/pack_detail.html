@@ -18,15 +18,16 @@
   .b-ok{background:#ecfdf5;border-color:#86efac;}
   .b-warn{background:#fffbeb;border-color:#fde68a;}
   .b-err{background:#fef2f2;border-color:#fecaca;}
-  .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;display:block;background:#f3f4f6;} .logo-wrap{display:flex;justify-content:center;align-items:center;padding:16px;} .logo-big{width:160px;height:160px;border-radius:16px;border:1px solid #e5e7eb;background:#f3f4f6;object-fit:cover}
-  .thumbs{display:none !important;}
-  .img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px;}
-  .sq{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:10px;border:1px solid #e5e7eb;background:#f3f4f6;}
+  .logo-wrap{display:flex;justify-content:center;align-items:center;padding:16px;}
+  .logo-big{width:160px;height:160px;border-radius:16px;border:1px solid #e5e7eb;background:#f3f4f6;object-fit:cover}
+  .img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
+  .sq{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:10px;border:1px solid #e5e7eb;background:#f3f4f6}
   .cta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
   .pbtn{border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
-  .pbtn.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand);} 
+  .pbtn.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand);}
   .rel-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);} 
   @media(min-width:900px){.rel-grid{grid-template-columns:repeat(4,1fr);}}
+  .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;display:block;background:#f3f4f6}
 </style>
 
 <div class="wrap" itemscope itemtype="https://schema.org/Product">
@@ -40,18 +41,13 @@
 
   <div class="grid">
     <div class="card">
-      <div class="logo-wrap"><img class="logo-big" src="{{ pack.partner.image_or_stock_url }}" alt="{{ pack.partner.nombre }}" loading="eager" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');"></div>
-      <!-- Nueva grilla 2x2 de imágenes -->
+      <div class="logo-wrap">
+        <img class="logo-big" src="{{ pack.partner.image_or_stock_url }}" alt="{{ pack.partner.nombre }}" loading="eager" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
+      </div>
       <div class="img-grid">
         {% for g in gallery %}
           <img class="sq" src="{{ g }}" alt="{{ pack.titulo }}" loading="lazy" decoding="async">
         {% endfor %}
-      </div>
-
-      <div class="pad thumbs">
-        <div class="logo-wrap"><img class="logo-big" src="{{ pack.partner.image_or_stock_url }}" alt="{{ pack.partner.nombre }}" loading="eager" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');"></div>
-        <img class="thumb-sm" src="{% static 'img/placeholder-pack.svg' %}" alt="Vista 2" onclick="swapHero(this.src)">
-        <img class="thumb-sm" src="{% static 'img/placeholder-pack.svg' %}" alt="Vista 3" onclick="swapHero(this.src)">
       </div>
     </div>
 
@@ -68,14 +64,14 @@
         {% if pack.stock <= 0 %}
           <span class="badge b-err">Sin stock</span>
         {% elif pack.stock < 5 %}
-          <span class="badge b-warn">¡Quedan {{ pack.stock }}!</span>
+          <span class="badge b-warn">&#161;Quedan {{ pack.stock }}!</span>
         {% else %}
           <span class="badge">Stock: {{ pack.stock }}</span>
         {% endif %}
       </div>
 
       <div style="margin-top:10px;">
-        <div class="muted">Retiro: {{ pack.pickup_start|date:"d/m H:i" }} – {{ pack.pickup_end|date:"H:i" }}</div>
+        <div class="muted">Retiro: {{ pack.pickup_start|date:"d/m H:i" }} - {{ pack.pickup_end|date:"H:i" }}</div>
         <div id="countdown" class="muted"></div>
       </div>
 
@@ -83,7 +79,7 @@
         {% if pending_order %}
           <a class="pbtn" href="/orders/{{ pending_order.id }}/?from=pack">Continuar pago</a>
           {% if last_payment and last_payment.status == "pending" %}
-            <span class="muted">Pago pendiente…</span>
+            <span class="muted">Pago pendiente.</span>
           {% endif %}
         {% else %}
           <button id="addBtn" type="button" class="pbtn" onclick="return addToCartPack(event)" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
@@ -94,11 +90,11 @@
   </div>
 
   <div style="margin-top:16px;">
-    <h2>También te puede interesar</h2>
+    <h2 style="color:#f59e0b;">Tambi&eacute;n te puede interesar</h2>
     <div class="rel-grid">
       {% for r in related %}
         <a class="card link" href="/packs/{{ r.id }}/">
-<img class="thumb" src="{{ r.image_or_stock_url }}" alt="{{ r.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
+          <img class="thumb" src="{{ r.image_or_stock_url }}" alt="{{ r.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
           <div class="pad">
             <p class="title">{{ r.titulo }}</p>
             <div class="muted">
@@ -108,21 +104,21 @@
           </div>
         </a>
       {% empty %}
-        <div class="muted">Sin más packs de este comercio por ahora.</div>
+        <div class="muted">Sin m&aacute;s packs de este comercio por ahora.</div>
       {% endfor %}
     </div>
   </div>
 </div>
 
 <script>
-function swapHero(src){ const img = document.getElementById('heroImg'); if(img) img.src = src; }
-(function(){
-  const el = document.getElementById('countdown');
-  if(el){
+  // Countdown
+  (function(){
+    const el = document.getElementById('countdown');
+    if(!el) return;
     const end = new Date("{{ pack.pickup_end|date:'Y-m-d H:i:s' }}".replace(' ','T'));
     function tick(){
       const now = new Date();
-      const diff = end – now;
+      const diff = end - now;
       if(diff <= 0){ el.textContent = 'Ventana de retiro finalizada'; return; }
       const h = Math.floor(diff/3.6e6);
       const m = Math.floor((diff%3.6e6)/6e4);
@@ -130,33 +126,20 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
       setTimeout(tick, 60000);
     }
     tick();
+  })();
+
+  // Helpers
+  function getCookie(name){
+    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return m ? m.pop() : '';
   }
 
-  const btn = document.getElementById('addBtn');
-  function getCookie(name){ const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return m?m.pop():''; }
-  if(btn){
-  // click handler inline via addToCartPack, removed legacy listener
-  // Fallback aleatorio para imágenes rotas o placeholder
-  const STOCK_POOL = [
-    "{% static 'img/stock/verduleria/1.jpg' %}",
-    "{% static 'img/stock/verduleria/2.jpeg' %}",
-    "{% static 'img/stock/cafes/1.jpg' %}",
-    "{% static 'img/stock/carniceria/2.jpeg' %}",
-    "{% static 'img/stock/helados/2.jpeg' %}",
-    "{% static 'img/stock/supermercados/3.jpg' %}"
-  ];
-  function pick(){ return STOCK_POOL[Math.floor(Math.random()*STOCK_POOL.length)]; }
-  document.querySelectorAll('.img-grid img, .rel-grid img').forEach(function(img){
-    img.addEventListener('error', function(){ img.src = pick(); }, { once:true });
-    try{ if((img.currentSrc||img.src||'').includes('placeholder-pack.svg')) img.src = pick(); }catch(e){}
-  });
+  // Expose global for inline onclick
   window.addToCartPack = async function(ev){
     if(ev) ev.preventDefault();
     const btn = document.getElementById('addBtn');
-    function getCookie(name){ const m=document.cookie.match('(^|;)\s*'+name+'\s*=\s*([^;]+)'); return m?m.pop():''; }
-    if(!btn) return false;
-    if(btn.disabled) return false;
-    const old=btn.textContent; btn.disabled=true; btn.textContent='Agregando...';
+    if(!btn || btn.disabled) return false;
+    const old = btn.textContent; btn.disabled = true; btn.textContent = 'Agregando...';
     try{
       const res = await fetch('/api/cart/add/', {
         method:'POST',
@@ -165,52 +148,41 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
         body: JSON.stringify({ pack_id: {{ pack.id }} })
       });
       const data = await res.json().catch(()=>({}));
-      if (res.status === 401 || res.status === 403){
+      if(res.status === 401 || res.status === 403){
         window.location = '{% url "login" %}?next={{ request.path|urlencode }}';
         return false;
       }
       if(!res.ok){
         const msg = (data && data.detail) ? data.detail : 'No se pudo agregar.';
         if(/mismo comercio/i.test(msg)){
-          if(confirm(msg + "\n\nVaciar carrito e intentar de nuevo?")){
+          if(confirm(msg + '\n\nVaciar carrito e intentar de nuevo?')){
             await fetch('/api/cart/clear/', { method:'POST', headers:{ 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin' });
             btn.disabled=false; btn.click(); return false;
           }
         }
-        alert(msg); btn.textContent=old; btn.disabled=false; return false;
+        alert(msg); btn.textContent = old; btn.disabled = false; return false;
       }
       if(window.updateCartBadge && typeof data.item_count !== 'undefined') updateCartBadge(data.item_count);
-      btn.textContent='¡Agregado!'; setTimeout(()=>location.href='/cart/', 400);
+      btn.textContent = 'Agregado!'; setTimeout(()=>location.href='/cart/', 400);
       return false;
-    }catch(e){ btn.textContent=old; btn.disabled=false; alert('Error de red'); return false; }
-  }
-})();
+    }catch(e){ btn.textContent = old; btn.disabled = false; alert('Error de red'); return false; }
+  };
+
+  // Image fallbacks
+  (function(){
+    const pool = [
+      '{% static "img/stock/verduleria/1.jpg" %}',
+      '{% static "img/stock/verduleria/2.jpeg" %}',
+      '{% static "img/stock/cafes/1.jpg" %}',
+      '{% static "img/stock/carniceria/2.jpeg" %}',
+      '{% static "img/stock/helados/2.jpeg" %}',
+      '{% static "img/stock/supermercados/3.jpg" %}'
+    ];
+    function pick(){ return pool[Math.floor(Math.random()*pool.length)]; }
+    document.querySelectorAll('.img-grid img, .rel-grid img').forEach(function(img){
+      img.addEventListener('error', function(){ img.src = pick(); }, { once:true });
+      try{ if((img.currentSrc||img.src||'').includes('placeholder-pack.svg')) img.src = pick(); }catch(e){}
+    });
+  })();
 </script>
 {% endblock %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
