@@ -10,7 +10,7 @@
   @media(min-width:980px){.grid{grid-template-columns:1.1fr .9fr;}}
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;}
   .pad{padding:12px;}
-  .title{margin:0 0 6px;font-size:1.4rem;font-weight:800;}
+  .title{margin:0 0 6px;font-size:1.4rem;font-weight:800;color:#f59e0b;}
   .muted{color:#6b7280;}
   .price{font-weight:900;font-size:1.4rem;}
   .price s{color:#9ca3af;font-weight:500;margin-left:6px;}
@@ -20,10 +20,8 @@
   .b-err{background:#fef2f2;border-color:#fecaca;}
   .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;display:block;background:#f3f4f6;}
   .thumb-sm{width:84px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;}
-  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
-  .cta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
-  .btn{border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
-  .btn.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand);}
+  \.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}\r\n  .thumb, .thumbs{ display:none !important; }\r\n  .img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}\r\n  .sq{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:10px;border:1px solid #e5e7eb;background:#f3f4f6}\r\n  .cta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;} .pbtn{border:1px solid var(--brand);background:var(--brand);color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+   .pbtn.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand);}
   
   .rel-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);} 
   @media(min-width:900px){.rel-grid{grid-template-columns:repeat(4,1fr);}}
@@ -45,6 +43,13 @@
       {% else %}
         <img id="heroImg" class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
       {% endif %}
+      <!-- Nueva grilla 2x2 de imágenes -->
+      <div class="img-grid">
+        {% for g in gallery %}
+          <img class="sq" src="{{ g }}" alt="{{ pack.titulo }}" loading="lazy" decoding="async">
+        {% endfor %}
+      </div>
+
       <div class="pad thumbs">
         {% if pack.imagen %}
           <img class="thumb-sm" src="{{ pack.image_or_stock_url }}" alt="Vista 1" onclick="swapHero(this.src)" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
@@ -80,14 +85,14 @@
 
       <div class="cta">
         {% if pending_order %}
-          <a class="btn" href="/orders/{{ pending_order.id }}/?from=pack">Continuar pago</a>
+          <a class="pbtn" href="/orders/{{ pending_order.id }}/?from=pack">Continuar pago</a>
           {% if last_payment and last_payment.status == "pending" %}
             <span class="muted">Pago pendiente…</span>
           {% endif %}
         {% else %}
-          <button id="addBtn" type="button" class="btn" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
+          <button id="addBtn" type="button" class="pbtn" {% if pack.stock <= 0 %}disabled title="Sin stock"{% endif %}>Agregar al carrito</button>
         {% endif %}
-        <a class="btn secondary" href="/c/{{ pack.partner.slug|default:pack.partner.id }}/">Ver comercio</a>
+        <a class="pbtn secondary" href="/c/{{ pack.partner.slug|default:pack.partner.id }}/">Ver comercio</a>
       </div>
     </div>
   </div>
@@ -143,7 +148,7 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
       btn.disabled = true; const old=btn.textContent; btn.textContent='Agregando...';
       try{
         const res = await fetch('/api/cart/add/', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin', body: JSON.stringify({ pack_id: {{ pack.id }} }) });
-        if(res.ok){ btn.textContent='Â¡Agregado!'; setTimeout(()=>location.href='/cart/', 500); }
+        if(res.ok){ btn.textContent='¡Agregado!'; setTimeout(()=>location.href='/cart/', 500); }
         else { btn.textContent='Error, reintentar'; btn.disabled=false; }
       }catch(e){ btn.textContent='Error, reintentar'; btn.disabled=false; }
     });
@@ -158,13 +163,21 @@ function swapHero(src){ const img = document.getElementById('heroImg'); if(img) 
     "{% static 'img/stock/supermercados/3.jpg' %}"
   ];
   function pick(){ return STOCK_POOL[Math.floor(Math.random()*STOCK_POOL.length)]; }
-  document.querySelectorAll('#heroImg, .rel-grid img').forEach(function(img){
+  document.querySelectorAll('.img-grid img, .rel-grid img').forEach(function(img){
     img.addEventListener('error', function(){ img.src = pick(); }, { once:true });
     try{ if((img.currentSrc||img.src||'').includes('placeholder-pack.svg')) img.src = pick(); }catch(e){}
   });
 })();
 </script>
 {% endblock %}
+
+
+
+
+
+
+
+
 
 
 

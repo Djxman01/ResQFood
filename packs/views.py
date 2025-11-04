@@ -1,9 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+﻿from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import F, Count
 from marketplace.models import Pack, Order
 from payments.models import Payment
+from marketplace.utils.images import stock_image_url
 
 def pack_list(request):
     now = timezone.now()
@@ -76,6 +77,21 @@ def pack_detail(request, pk):
     )
 
     price_show = pack.precio_oferta or pack.precio_original
+    # Build gallery of 4 images: use main image + 3 stock images per category
+    gallery = []
+    try:
+        main_img = getattr(pack, "image_or_stock_url", "") or ""
+    except Exception:
+        main_img = ""
+    if main_img:
+        gallery.append(main_img)
+    slug = getattr(pack.partner, "categoria", "otros")
+    key_base = f"{pack.titulo}-{getattr(pack.partner, 'nombre', '')}-{pack.pk}"
+    for i in range(1, 4):
+        try:
+            gallery.append(stock_image_url(slug, f"{key_base}-{i}"))
+        except Exception:
+            gallery.append(main_img)
 
     ctx = {
         "pack": pack,
@@ -84,7 +100,16 @@ def pack_detail(request, pk):
         "related": related,
         "now": now,
         "price_show": price_show,
-        "meta_title": f"{pack.titulo} — {pack.partner.nombre} | ResQFood",
-        "meta_desc": f"{pack.titulo} en {pack.partner.nombre}. Retiro {pack.pickup_start:%d/%m %H:%M}–{pack.pickup_end:%H:%M}. Stock {pack.stock}.",
+        "gallery": gallery[:4],
+        "meta_title": f"{pack.titulo} · {pack.partner.nombre} | ResQFood",
+        "meta_desc": f"{pack.titulo} en {pack.partner.nombre}. Retiro {pack.pickup_start:%d/%m %H:%M}-{pack.pickup_end:%H:%M}. Stock {pack.stock}.",
     }
     return render(request, "marketplace/pack_detail.html", ctx)
+
+
+
+
+
+
+
+
