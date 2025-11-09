@@ -14,22 +14,23 @@
   .b-ret  { background:#DCFCE7; color:#166534; }
   .b-canc { background:#E5E7EB; color:#374151; }
   .b-exp  { background:#FEE2E2; color:#991B1B; }
-  .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; cursor:pointer; }
+  /* Limitar estilos de botones a la zona de contenido para no afectar la navbar */
+  .wrap .btn { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; background:white; color:#111; text-decoration:none; cursor:pointer; }
   img.cover { width:100%; height:180px; object-fit:cover; border-radius:8px; }
-  .pay-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; background: #fff; display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
+  .pay-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; background: #fff; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
   .pay-left { color: #374151; font-size: 0.95rem; }
   .pm-option { display: flex; align-items: start; gap: 8px; margin: 6px 0; }
   .pm-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-  .btn-primary { appearance: none; border: 1px solid #2563eb; background: #2563eb; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s ease; }
+  .btn-primary { appearance: none; border: 1px solid #f59e0b; background: #f59e0b; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s ease; }
   .btn-primary[disabled] { opacity: .6; cursor: not-allowed; }
 </style>
 
 <div class="wrap">
-  <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn">â† Volver</a>
-  <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle del pedido #{{ order.id }}</h1>
+  <a href="{% if from_cart %}/cart/{% else %}{% url 'mis_reservas' %}{% endif %}" class="btn" style="color:#111; text-decoration:none;">&larr; Volver</a>
+  <h1 style="font-size:1.5rem; font-weight:700; margin:1rem 0;">Detalle de tu pedido</h1>
   {% if is_expiring %}
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:8px 10px;margin:8px 0;">
-      â° Este pedido vence pronto (retiro hasta {{ order.pack.pickup_end|date:"H:i" }}). CompletÃ¡ el pago para confirmar.
+      Este pedido vence pronto (retiro hasta {{ order.pack.pickup_end|date:"H:i" }}). Complet&aacute; el pago para confirmar.
     </div>
   {% endif %}
 
@@ -41,7 +42,7 @@
       <h2 style="margin:.5rem 0; font-weight:700;">{{ order.pack.titulo }}</h2>
       <div class="muted">{{ order.pack.partner.nombre }}</div>
       <p class="muted" style="margin-top:.5rem;">
-        <strong>Retiro:</strong> {{ order.pack.pickup_start|date:"d/m/Y H:i" }} â€“ {{ order.pack.pickup_end|date:"d/m/Y H:i" }}
+        <strong>Retiro:</strong> {{ order.pack.pickup_start|date:"d/m/Y" }} &ndash; {{ order.pack.pickup_end|date:"d/m/Y" }}
       </p>
       <p class="muted"><strong>Precio:</strong> ${{ order.precio_pagado|floatformat:2 }}</p>
       {% with es=order.estado %}
@@ -56,16 +57,12 @@
         <div style="border:1px dashed #e5e7eb; border-radius:12px; display:flex; align-items:center; justify-content:center; padding:12px;">
           <img src="{% url 'order_qr' order.id %}" alt="QR de la reserva">
         </div>
-        <p class="muted" style="text-align:center; margin-top:.5rem;">MostrÃ¡ este cÃ³digo en el comercio para canjear tu pack.</p>
+        <p class="muted" style="text-align:center; margin-top:.5rem;">Mostr&aacute; este c&oacute;digo en el comercio para canjear tu pack.</p>
       {% else %}
-        <div class="pay-card" aria-labelledby="pago-titulo">
-          <div class="pay-left">
-            <strong id="pago-titulo">Pago</strong>
-            <div class="muted">AÃºn no registramos un intento de pago. ElegÃ­ un medio y continuÃ¡.</div>
-            <div class="muted" style="margin-top:6px;"><strong>El QR aparecerÃ¡ cuando el pago estÃ© confirmado.</strong><br>UsÃ¡ Mercado Pago, efectivo o transferencia.</div>
-          </div>
+        <div class="pay-card" aria-label="Medios de pago">
+          <div class="muted" style="margin-top:6px;"><strong>El QR aparecer&aacute; cuando el pago est&eacute; confirmado.</strong><br>Us&aacute; Mercado Pago, efectivo o transferencia.</div>
           <div>
-            <h4 style="margin:0 0 8px;">ElegÃ­ cÃ³mo pagar:</h4>
+            <h4 style="margin:0 0 8px;">Eleg&iacute; c&oacute;mo pagar:</h4>
             <div class="pm-option"><input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}> <span>Mercado Pago (tarjeta, efectivo, QR)</span></div>
             <div class="pm-option"><input type="radio" name="metodo_pago" value="efectivo" {% if order.metodo_pago == "efectivo" %}checked{% endif %}> <span>Efectivo al retirar</span></div>
             <div class="pm-option"><input type="radio" name="metodo_pago" value="transferencia" {% if order.metodo_pago == "transferencia" %}checked{% endif %}> <span>Transferencia bancaria</span></div>
@@ -136,7 +133,7 @@
         const resp = await fetch(`/api/payments/mp/start/${orderId}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
         if(!resp.ok){ const text = await resp.text(); throw new Error(`No se pudo iniciar el pago (${resp.status}). ${text || ''}`); }
         const data = await resp.json();
-        if (!data.init_point) throw new Error('No se recibiÃ³ init_point desde el servidor.');
+        if (!data.init_point) throw new Error('No se recibi&oacute; init_point desde el servidor.');
         window.location.href = data.init_point;
       }catch(e){ alert(e && e.message ? e.message : 'Error iniciando pago'); }
       finally{ this.removeAttribute('aria-busy'); }
@@ -151,7 +148,7 @@
         const resp = await fetch(`/api/payments/cash/start/${orderId}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
         const data = await resp.json();
         if(!resp.ok) throw new Error(data && data.detail ? data.detail : 'No se pudo confirmar la reserva en efectivo.');
-        alert('Reserva confirmada. PagÃ¡s en efectivo al retirar.');
+        alert('Reserva confirmada. Pag&aacute;s en efectivo al retirar.');
         window.location.reload();
       } catch(ex){ alert(ex.message || 'No se pudo confirmar la reserva en efectivo.'); }
     });
@@ -172,4 +169,12 @@
   })();
 </script>
 {% endblock %}
+
+
+
+
+
+
+
+
 

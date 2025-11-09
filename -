@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}{{ meta_title }}{% endblock %}
@@ -7,7 +7,7 @@
 <style>
   .wrap { max-width:1100px; margin: 16px auto; padding: 0 16px; }
   .crumbs { font-size:.92rem; color:#6b7280; margin-bottom:8px; }
-  .crumbs a { color:#f59e0b; text-decoration:none; }
+  .crumbs a { color:#2563eb; text-decoration:none; }
   .header { display:grid; gap:12px; grid-template-columns: 72px 1fr auto; align-items:center; margin-bottom:12px; }
   .logo-img { width:72px; height:72px; border-radius:12px; background:#f3f4f6; object-fit:cover; }
   .h-title { margin:0; font-size:1.25rem; font-weight:800; color:#111827; }
@@ -40,7 +40,11 @@
     <a href="/">Inicio</a> &rsaquo; <span>{{ partner.nombre }}</span>
   </div>
   <div class="header">
-    <img class="logo-img" src="{{ partner.image_or_stock_url }}" alt="{{ partner.nombre }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
+    {% if partner.imagen %}
+      <img class="logo-img" src="{{ partner.image_or_stock_url }}" alt="{{ partner.nombre }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
+    {% else %}
+      <img class="logo-img" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+    {% endif %}
     <div>
       <h1 class="h-title">{{ partner.nombre }}</h1>
       <div class="h-sub">
@@ -63,19 +67,21 @@
     <a class="pill {% if f_abierto %}active{% endif %}" href="?oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={% if f_abierto %}0{% else %}1{% endif %}&orden={{ orden }}">Abierto ahora</a>
     <span class="muted" style="margin-left:auto;">Orden:</span>
     <select id="ordenSel" class="select">
-      <option value="nuevo" {% if orden == 'nuevo' %}selected{% endif %}>M&aacute;s nuevo</option>
-      <option value="mas-comprado" {% if orden == 'mas-comprado' %}selected{% endif %}>M&aacute;s comprado</option>
-      <option value="precio-asc" {% if orden == 'precio-asc' %}selected{% endif %}>Precio &uarr;</option>
-      <option value="precio-desc" {% if orden == 'precio-desc' %}selected{% endif %}>Precio &darr;</option>
+      <option value="nuevo" {% if orden == 'nuevo' %}selected{% endif %}>Más nuevo</option>
+      <option value="mas-comprado" {% if orden == 'mas-comprado' %}selected{% endif %}>Más comprado</option>
+      <option value="precio-asc" {% if orden == 'precio-asc' %}selected{% endif %}>Precio ?</option>
+      <option value="precio-desc" {% if orden == 'precio-desc' %}selected{% endif %}>Precio ?</option>
     </select>
   </div>
 
   <div class="grid">
     {% for p in page.object_list %}
       <a class="card" href="/packs/{{ p.id }}/">
+        {% if p.imagen %}
         <picture>
           <img class="thumb" src="{{ p.image_or_stock_url }}" srcset="{{ p.image_or_stock_url }} 1024w" sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 24vw" alt="{{ p.titulo|default:'Pack' }}" loading="lazy" decoding="async" fetchpriority="low" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
         </picture>
+        {% else %}<img class="thumb" src="{% static 'img/placeholder-pack.svg' %}" alt="" aria-hidden="true" loading="lazy" decoding="async">{% endif %}
         <div class="card-body">
           <p class="title">{{ p.titulo|default:"Pack" }}</p>
           <div class="meta">
@@ -97,13 +103,13 @@
   {% if page.paginator.num_pages > 1 %}
     <div class="pagination">
       {% if page.has_previous %}
-        <a class="page-link" href="?page={{ page.previous_page_number }}&oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={{ f_abierto|yesno:'1,0' }}&orden={{ orden }}">&laquo;</a>
+        <a class="page-link" href="?page={{ page.previous_page_number }}&oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={{ f_abierto|yesno:'1,0' }}&orden={{ orden }}">«</a>
       {% endif %}
       {% for i in page.paginator.page_range %}
         <a class="page-link {% if i == page.number %}active{% endif %}" href="?page={{ i }}&oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={{ f_abierto|yesno:'1,0' }}&orden={{ orden }}">{{ i }}</a>
       {% endfor %}
       {% if page.has_next %}
-        <a class="page-link" href="?page={{ page.next_page_number }}&oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={{ f_abierto|yesno:'1,0' }}&orden={{ orden }}">&raquo;</a>
+        <a class="page-link" href="?page={{ page.next_page_number }}&oferta={{ f_oferta|yesno:'1,0' }}&stock={{ f_stock|yesno:'1,0' }}&abierto={{ f_abierto|yesno:'1,0' }}&orden={{ orden }}">»</a>
       {% endif %}
     </div>
   {% endif %}
@@ -112,25 +118,3 @@
 <script>
 (function(){
   const sel = document.getElementById('ordenSel');
-  if (!sel) return;
-  sel.addEventListener('change', () => {
-    const sp = new URLSearchParams(window.location.search);
-    sp.set('orden', sel.value);
-    sp.delete('page');
-    window.location.search = sp.toString();
-  });
-})();
-</script>
-{% endblock %}
-
-
-
-
-
-
-
-
-
-
-
-

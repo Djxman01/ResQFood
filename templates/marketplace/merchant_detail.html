@@ -13,11 +13,7 @@
       {% for p in packs %}
       <div style="border:1px solid #eee;border-radius:12px;overflow:hidden;background:#fff;display:block">
         <a href="/packs/{{ p.id }}/" style="text-decoration:none;color:inherit;display:block">
-          {% if p.imagen %}
-          <img src="{{ p.image_or_stock_url }}" alt="{{ p.titulo }}" style="width:100%;height:150px;object-fit:cover;display:block">
-          {% else %}
-          <img src="https://picsum.photos/seed/{{ p.id }}/600/300" alt="{{ p.titulo }}" style="width:100%;height:150px;object-fit:cover;display:block">
-          {% endif %}
+          <img src="{{ p.image_or_stock_url }}" alt="{{ p.titulo }}" style="width:100%;height:150px;object-fit:cover;display:block" data-placeholder="{% static 'img/placeholder-pack.svg' %}">
           <div style="padding:12px">
             <h3 style="margin:8px 0 4px 0">{{ p.titulo }}</h3>
             <div style="color:#666; font-size:14px; margin-bottom:6px">{{ partner.nombre }}</div>

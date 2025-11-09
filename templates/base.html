@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -8,13 +8,19 @@
   <style>
     :root { --bg:#f7fbea; --text:#111; --muted:#666; --brand:#22c55e; }
     html, body{ height:100%; }
-    body { margin:0; background:var(--bg); color:var(--text);
+    body {  margin:0; background:var(--bg); color:var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
-      min-height:100vh; display:flex; flex-direction:column; }
+      min-height:100vh; display:flex; flex-direction:column;  padding-top:64px; }
     main{ flex:1; }
     .container{ max-width:1200px; margin:0 auto; padding:0 16px; }
-    .nav{ position:sticky; top:0; background:#fff; border-bottom:1px solid #eee; z-index:10 }
+    .nav{ position:fixed; top:0; left:0; right:0; background:#fff; border-bottom:1px solid #eee; z-index:1000; margin:0 }
     .nav-inner{ display:flex; gap:12px; align-items:center; height:64px }
+    .nav-inner form{ margin:0; }
+    /* No estirar los icon buttons; solo aplicar a botones de texto */
+    .nav-inner .btn:not(.icon-btn){ height:40px; display:inline-flex; align-items:center; padding:0 12px; line-height:1; }
+    .nav-inner .icon-btn{ width:40px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+    .searchbar{ flex:1; display:flex; align-items:center; border:1px solid #eee; border-radius:999px; padding:8px 12px; gap:8px; height:40px }
+    .searchbar input{ border:none; outline:none; flex:1; font-size:14px; height:100%; }
     .logo{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:20px; color:var(--brand); text-decoration:none; margin-right:24px; }
     .chip{ display:inline-flex; gap:8px; align-items:center; border:1px solid #eee; border-radius:999px; padding:8px 12px; background:#fafafa; cursor:pointer }
     .searchbar{ flex:1; display:flex; align-items:center; border:1px solid #eee; border-radius:999px; padding:8px 12px; gap:8px }
@@ -45,6 +51,8 @@
     .b-ok{ background:#ecfdf5; border-color:#86efac } .b-warn{ background:#fffbeb; border-color:#fde68a }
     .b-err{ background:#fef2f2; border-color:#fecaca }
     a.link{ text-decoration:none; color:inherit; display:block }
+    a.card{ text-decoration:none; color:inherit; display:block }
+    a.card:hover{ text-decoration:none }
     :where(a,button,select,input):focus-visible{ outline:2px solid var(--brand); outline-offset:2px; border-radius:8px }
     .skeleton{ position:relative; overflow:hidden; background:#f3f4f6 }
     .skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%);
@@ -193,5 +201,9 @@
   </footer>
 </body>
 </html>
+
+
+
+
 
 
