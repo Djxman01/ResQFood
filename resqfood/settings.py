@@ -27,12 +27,12 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    "https://your-service.onrender.com",
+    "resqfood-cp13.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://unemendable-elvia-devoid.ngrok-free.dev",
-    "https://your-service.onrender.com",
+    "resqfood-cp13.onrender.com",
     "http://127.0.0.1",
     "http://localhost",
 ]
