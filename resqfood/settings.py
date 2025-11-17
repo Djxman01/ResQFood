@@ -31,8 +31,7 @@ ALLOWED_HOSTS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://unemendable-elvia-devoid.ngrok-free.dev",
-    "resqfood-cp13.onrender.com",
+    "https://resqfood-cp13.onrender.com",
     "http://127.0.0.1",
     "http://localhost",
 ]
