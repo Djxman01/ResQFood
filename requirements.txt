@@ -24,3 +24,4 @@ requests>=2.32
 coverage>=7.6
 mercadopago>=2.2.0
 gunicorn==21.2.0
+whitenoise==6.6.0
