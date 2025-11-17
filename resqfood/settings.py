@@ -24,8 +24,17 @@ MEDIA_ROOT = BASE_DIR / "media"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "unemendable-elvia-devoid.ngrok-free.dev",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://unemendable-elvia-devoid.ngrok-free.dev",
+    "http://127.0.0.1",
+    "http://localhost",
+]
 
 # Application definition
 
@@ -139,12 +148,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -244,3 +247,5 @@ if DEBUG:
     STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 else:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STORAGES = { "staticfiles": { "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" } }

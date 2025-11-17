@@ -5,12 +5,14 @@
 
 {% block content %}
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Nunito:wght@600;700;800&display=swap');
   .section { margin: 24px auto; max-width: 1100px; padding: 0 16px; }
   .section h2 { font-size: 1.25rem; margin: 0 0 12px; }
   .hero { max-width:1100px; margin:16px auto; padding:0 16px; }
-  .hero-card{ background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:14px; }
-  .hero-title{ font-size:1.6rem; font-weight:800; margin:0 0 6px; }
-  .hero-sub{ color:#6b7280; margin:0 0 16px; }
+  .hero-card{ background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:14px; font-family:'Inter','Segoe UI',system-ui,sans-serif; }
+  .hero-title{ font-size:1.6rem; font-weight:800; margin:0 0 6px; font-family:'Nunito','Segoe UI',system-ui,sans-serif; }
+  .hero-sub{ color:#6b7280; margin:0 0 16px; font-family:'Inter','Segoe UI',system-ui,sans-serif; }
+  .hero .btn{ font-family:'Inter','Segoe UI',system-ui,sans-serif; }
   .grid-tiles { display:grid; gap:12px; grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 640px) { .grid-tiles { grid-template-columns: repeat(4, 1fr); } }
   @media (min-width: 1100px){ .grid-tiles { grid-template-columns: repeat(6, 1fr); } }

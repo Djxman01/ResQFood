@@ -23,6 +23,13 @@
   .pm-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
   .btn-primary { appearance: none; border: 1px solid #f59e0b; background: #f59e0b; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s ease; }
   .btn-primary[disabled] { opacity: .6; cursor: not-allowed; }
+  .qr-box{ border:1px dashed #e5e7eb; border-radius:12px; padding:12px; display:none; align-items:center; justify-content:center; background:#fff; }
+  .qr-note{ text-align:center; color:#6b7280; margin-top:.5rem; display:none; }
+  .msg{ border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#f9fafb; color:#374151; }
+  .msg.ok{ background:#ecfdf5; border-color:#86efac; color:#065f46; }
+  .msg.err{ background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+  .msg.info{ background:#fffbeb; border-color:#fde68a; color:#92400e; }
+  #qrImg{ width:220px; max-width:100%; height:auto; display:block; }
 </style>
 
 <div class="wrap">
@@ -60,7 +67,10 @@
         <p class="muted" style="text-align:center; margin-top:.5rem;">Mostr&aacute; este c&oacute;digo en el comercio para canjear tu pack.</p>
       {% else %}
         <div class="pay-card" aria-label="Medios de pago">
-          <div class="muted" style="margin-top:6px;"><strong>El QR aparecer&aacute; cuando el pago est&eacute; confirmado.</strong><br>Us&aacute; Mercado Pago, efectivo o transferencia.</div>
+          <div id="payMsg" class="msg" style="display:none;"></div>
+          <div class="muted" style="margin-top:6px;"><strong>Eleg&iacute; un medio de pago.</strong> Con efectivo o transferencia pod&eacute;s mostrar un QR en el local y abonar all&iacute;.</div>
+          <div id="qrBox" class="qr-box"><img id="qrImg" src="{% url 'order_qr' order.id %}" alt="QR del pedido"></div>
+          <div id="qrNote" class="qr-note">Mostr&aacute; este QR en el local y abon&aacute;s all&iacute;.</div>
           <div>
             <h4 style="margin:0 0 8px;">Eleg&iacute; c&oacute;mo pagar:</h4>
             <div class="pm-option"><input type="radio" name="metodo_pago" value="mp" {% if order.metodo_pago == "mp" %}checked{% endif %}> <span>Mercado Pago (tarjeta, efectivo, QR)</span></div>
@@ -104,9 +114,16 @@
     const btn = document.getElementById('payNowBtn');
     const cashBtn = document.getElementById('cashConfirmBtn');
     const trBtn = document.getElementById('transferStartBtn');
+    const qrBox = document.getElementById('qrBox');
+    const qrNote = document.getElementById('qrNote');
     if(btn) btn.style.display = (method === 'mp') ? 'inline-block' : 'none';
-    if(cashBtn) cashBtn.style.display = (method === 'efectivo') ? 'inline-block' : 'none';
-    if(trBtn) trBtn.style.display = (method === 'transferencia') ? 'inline-block' : 'none';
+    if(cashBtn) cashBtn.style.display = 'none';
+    if(trBtn) trBtn.style.display = 'none';
+    if(qrBox && qrNote){
+      const showQR = (method === 'efectivo' || method === 'transferencia');
+      qrBox.style.display = showQR ? 'flex' : 'none';
+      qrNote.style.display = showQR ? 'block' : 'none';
+    }
   }
   document.querySelectorAll('input[name="metodo_pago"]').forEach(r => {
     r.addEventListener('change', async () => {
@@ -135,7 +152,10 @@
         const data = await resp.json();
         if (!data.init_point) throw new Error('No se recibi&oacute; init_point desde el servidor.');
         window.location.href = data.init_point;
-      }catch(e){ alert(e && e.message ? e.message : 'Error iniciando pago'); }
+      }catch(e){
+        const box = document.getElementById('payMsg');
+        if(box){ box.className = 'msg err'; box.style.display='block'; box.innerHTML = (e && e.message) ? e.message : 'Error iniciando pago'; }
+      }
       finally{ this.removeAttribute('aria-busy'); }
     });
   })();
@@ -148,9 +168,13 @@
         const resp = await fetch(`/api/payments/cash/start/${orderId}/`, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')} });
         const data = await resp.json();
         if(!resp.ok) throw new Error(data && data.detail ? data.detail : 'No se pudo confirmar la reserva en efectivo.');
-        alert('Reserva confirmada. Pag&aacute;s en efectivo al retirar.');
-        window.location.reload();
-      } catch(ex){ alert(ex.message || 'No se pudo confirmar la reserva en efectivo.'); }
+        const box = document.getElementById('payMsg');
+        if(box){ box.className = 'msg ok'; box.style.display='block'; box.innerHTML = 'Reserva confirmada. Pag&aacute;s en efectivo al retirar.'; }
+        setTimeout(()=>window.location.reload(), 1000);
+      } catch(ex){
+        const box = document.getElementById('payMsg');
+        if(box){ box.className = 'msg err'; box.style.display='block'; box.innerHTML = ex.message || 'No se pudo confirmar la reserva en efectivo.'; }
+      }
     });
   })();
 
@@ -163,12 +187,25 @@
         const data = await resp.json();
         if(!resp.ok) throw new Error(data && data.detail ? data.detail : 'No se pudo iniciar el flujo de transferencia.');
         const b = data.bank || {};
-        alert(`Datos para transferir:\nTitular: ${b.titular}\nCUIT: ${b.cuit}\nAlias: ${b.alias}\nCBU: ${b.cbu}`);
-      } catch(ex){ alert(ex.message || 'No se pudo iniciar el flujo de transferencia.'); }
+        const box = document.getElementById('payMsg');
+        if(box){
+          box.className = 'msg info'; box.style.display='block';
+          box.innerHTML = 'Datos para transferir:<br>'+
+            '<strong>Titular:</strong> ' + (b.titular || '-') + '<br>'+
+            '<strong>CUIT:</strong> ' + (b.cuit || '-') + '<br>'+
+            '<strong>Alias:</strong> ' + (b.alias || '-') + '<br>'+
+            '<strong>CBU:</strong> ' + (b.cbu || '-') ;
+        }
+      } catch(ex){
+        const box = document.getElementById('payMsg');
+        if(box){ box.className = 'msg err'; box.style.display='block'; box.innerHTML = ex.message || 'No se pudo iniciar el flujo de transferencia.'; }
+      }
     });
   })();
 </script>
 {% endblock %}
+
+
 
 
 
