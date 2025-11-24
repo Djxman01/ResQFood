@@ -16,7 +16,8 @@ env/
 db.sqlite3
 media/
 staticfiles/
-static/
+# keep stock assets in version control
+# static/ contains source assets referenced at runtime
 
 # VSCode / OS
 .vscode/
