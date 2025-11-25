@@ -87,7 +87,7 @@ ROOT_URLCONF = 'resqfood.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        "DIRS": [BASE_DIR / "templates"],  # <- importante
+        "DIRS": [BASE_DIR / "templates"], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -157,11 +157,11 @@ AUTH_USER_MODEL = "core.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",  # ← importante
+        "rest_framework.authentication.SessionAuthentication",  
         "rest_framework.authentication.BasicAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",  # opcional
+        "rest_framework_simplejwt.authentication.JWTAuthentication",  
     ),
-    # Globalmente abierto para lecturas; las vistas que requieran login lo piden ellas
+    
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.AllowAny",
     ),
@@ -174,7 +174,7 @@ REST_FRAMEWORK = {
 # Payments feature flags / config
 PAYMENTS_USE_LOCAL_MOCK = os.getenv("PAYMENTS_USE_LOCAL_MOCK", "true").lower() == "true"
 
-# Mercado Pago configuration (used when not using local mock)
+# Mercado Pago configuration 
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
 MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "")
 MP_NOTIFICATION_URL = os.getenv("MP_NOTIFICATION_URL", "https://example.com/webhooks/mercadopago/")
@@ -182,7 +182,7 @@ MP_BACK_URL_SUCCESS = os.getenv("MP_BACK_URL_SUCCESS", "http://localhost:8000/pa
 MP_BACK_URL_PENDING = os.getenv("MP_BACK_URL_PENDING", "http://localhost:8000/payments/pending/")
 MP_BACK_URL_FAILURE = os.getenv("MP_BACK_URL_FAILURE", "http://localhost:8000/payments/failure/")
 
-# Webhook verification secret (HMAC). Leave blank in dev.
+# Webhook verification secret (HMAC). 
 MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")
 
 # Bank transfer info (for transfer flow)
@@ -196,15 +196,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",    
 ]
 
-# Redirecciones al iniciar/cerrar sesión (usa los nombres de ruta)
-LOGIN_URL = "login"                # si usás core/urls.py con name="login"; si no, pon "login" de accounts
-LOGIN_REDIRECT_URL = "packs:list"  # adónde ir después de loguear OK
-LOGOUT_REDIRECT_URL = "home" # adónde ir después de salir
 
-# Emails a consola (para password reset)
+LOGIN_URL = "login"                
+LOGIN_REDIRECT_URL = "packs:list"  
+LOGOUT_REDIRECT_URL = "home" 
+
+
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Images: stock vs media
+
 # Use stock images when real image is missing
 USE_STOCK_IMAGES_FOR_EMPTY = True
 # Root under static/ for stock assets
@@ -212,7 +212,7 @@ STOCK_IMAGE_ROOT = "img/stock"
 # NEW: force stock everywhere (ignore media files)
 USE_STOCK_IMAGES_FORCE_STOCK = True
 
-# Mensajes (ya viene activo por defecto, pero mostraremos el bloque en base.html)
+
 from django.contrib.messages import constants as messages
 MESSAGE_TAGS = {
     messages.DEBUG: "debug",
@@ -222,13 +222,13 @@ MESSAGE_TAGS = {
     messages.ERROR: "error",
 }
 
-# Reminder settings
+# Settings reminders
 REMINDER_ENABLED = True
 REMINDER_WINDOW_MINUTES = int(os.getenv("REMINDER_WINDOW_MINUTES", "120"))
 REMINDER_EMAIL_SENDER = os.getenv("REMINDER_EMAIL_SENDER", "notificaciones@resqfood.local")
 
-# For development you can send emails to console
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
 
 USE_STOCK_IMAGES_PREFER_STOCK = True
 
@@ -236,14 +236,14 @@ USE_STOCK_IMAGES_PREFER_STOCK = True
 # Static & media
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]  # ya lo usaste para las fotos stock
+STATICFILES_DIRS = [BASE_DIR / "static"]  
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 
 if DEBUG:
-    # In desarrollo servimos estáticos sin manifest ni compresión previa
+    
     STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 else:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

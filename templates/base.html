@@ -84,6 +84,17 @@
     .footer a{ text-decoration:none; color:inherit; }
     .footer a:hover{ text-decoration:none; }
     .footer-copy{ text-align:center; color:#6b7280; padding:12px 0; border-top:1px solid #f3f4f6; font-size:.9rem; }
+
+    /* Modal ubicacion */
+    .modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:1200; pointer-events:none; opacity:0; transition:opacity .18s ease; }
+    .modal.open{ pointer-events:auto; opacity:1; }
+    .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.4); }
+    .modal-dialog{ position:relative; background:#fff; border-radius:14px; padding:18px; box-shadow:0 16px 42px rgba(0,0,0,.18); width:90%; max-width:380px; z-index:1; }
+    .modal-dialog h3{ margin:0 0 6px; font-size:1.05rem; }
+    .modal-dialog p{ margin:0 0 12px; color:#4b5563; font-size:.95rem; }
+    .modal-dialog input{ width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:1rem; box-sizing:border-box; }
+    .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+    .btn-ghost{ border:1px solid #e5e7eb; background:#fff; color:#111; }
   </style>
   <script>
     // Fallback de imágenes
@@ -165,10 +176,31 @@
     const guardada = localStorage.getItem(ubicKey);
     if (guardada) label.textContent = guardada;
 
-    document.getElementById("btn-ubicacion").onclick = () => {
-      const nueva = prompt("¿Dónde estás? (ej: Córdoba)");
+    const modal = document.getElementById("ubic-modal");
+    const input = document.getElementById("ubic-input");
+    const btnSave = document.getElementById("ubic-save");
+    const btnCancel = document.getElementById("ubic-cancel");
+
+    function closeModal(){ modal.classList.remove("open"); }
+    function openModal(){
+      modal.classList.add("open");
+      input.value = label.textContent || "";
+      setTimeout(() => input.focus(), 50);
+    }
+    function saveUbicacion(){
+      const nueva = (input.value || "").trim();
       if (nueva) { localStorage.setItem(ubicKey, nueva); label.textContent = nueva; }
-    };
+      closeModal();
+    }
+
+    document.getElementById("btn-ubicacion").onclick = openModal;
+    btnSave.onclick = saveUbicacion;
+    btnCancel.onclick = closeModal;
+    modal.querySelector(".modal-backdrop").onclick = closeModal;
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); saveUbicacion(); }
+      if (e.key === "Escape") { closeModal(); }
+    });
   </script>
 
   <script>
@@ -179,6 +211,19 @@
   </script>
 
   <form style="display:none">{% csrf_token %}</form>
+
+  <div class="modal" id="ubic-modal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ubic-modal-title">
+      <h3 id="ubic-modal-title">Eleg&iacute; tu ubicaci&oacute;n</h3>
+      <p>Usamos esta referencia para mostrarte packs cercanos.</p>
+      <input id="ubic-input" type="text" name="ubicacion" placeholder="Ej: C&oacute;rdoba" autocomplete="off" />
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="ubic-cancel">Cancelar</button>
+        <button type="button" class="btn" id="ubic-save">Guardar</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="container footer-inner">

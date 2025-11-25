@@ -26,14 +26,19 @@ class PartnerSerializer(serializers.ModelSerializer):
 
 class PackSerializer(serializers.ModelSerializer):
     partner_nombre = serializers.CharField(source="partner.nombre", read_only=True)
+    partner_categoria = serializers.CharField(source="partner.categoria", read_only=True)
     partner_imagen_url = serializers.SerializerMethodField()
     imagen_url = serializers.SerializerMethodField()  # legacy media
     image_url = serializers.SerializerMethodField()   # stock-aware
+    descripcion = serializers.SerializerMethodField()
 
     class Meta:
         model = Pack
-        fields = ["id","partner","partner_nombre","titulo","etiqueta","precio_original","imagen_url","image_url","partner_imagen_url",
-                  "precio_oferta","stock","pickup_start","pickup_end","creado_at"]
+        fields = [
+            "id","partner","partner_nombre","partner_categoria","titulo","descripcion","etiqueta",
+            "precio_original","imagen_url","image_url","partner_imagen_url",
+            "precio_oferta","stock","pickup_start","pickup_end","creado_at"
+        ]
         
     def get_imagen_url(self, obj):
         try:
@@ -47,6 +52,24 @@ class PackSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         return obj.image_or_stock_url
+
+    def get_descripcion(self, obj):
+        """Descripcion generada en base a la categoria y titulo."""
+        cat = getattr(obj.partner, "categoria", "") or ""
+        title = getattr(obj, "titulo", "") or "Pack"
+        templates = {
+            "verduleria": f"{title} con verduras frescas de estacion, listo para cocinar.",
+            "panaderia": f"{title} con panes y facturas del dia, ideal para compartir.",
+            "cafe": f"{title} incluye opciones dulces y saladas para brunch.",
+            "carniceria": f"{title} con cortes seleccionados, listo para tu proxima comida.",
+            "heladeria": f"{title} de helados artesanales, perfecto para postre.",
+            "supermercado": f"{title} con basicos de despensa y ahorro semanal.",
+            "almacen": f"{title} con variedades de almacen para tus comidas.",
+            "pescaderia": f"{title} con filetes y productos del mar listos para cocinar.",
+            "dietetica": f"{title} con productos saludables y snacks naturales.",
+            "pastas": f"{title} de pastas frescas listas para hervir y servir.",
+        }
+        return templates.get(cat, f"{title} listo para retirar en el local.")
 
     def get_partner_imagen_url(self, obj):
         try:

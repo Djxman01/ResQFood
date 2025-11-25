@@ -46,6 +46,7 @@
           <img src="${img}" alt="${p.titulo}" style="max-width:420px;border-radius:12px;display:block;margin-bottom:12px">
           <h1 style="margin:0 0 8px 0">${p.titulo}</h1>
           <p><b>Comercio:</b> ${partner}</p>
+          <p><b>Descripcion:</b> ${p.descripcion || "Pack listo para retirar."}</p>
           <p><b>Etiqueta:</b> ${p.etiqueta || "-"}</p>
           <p><b>Stock:</b> ${p.stock}</p>
           <p><b>Precio:</b> ${money(precio)}</p>
