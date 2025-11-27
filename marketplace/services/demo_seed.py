@@ -170,15 +170,15 @@ def ensure_demo_packs(min_count: int = 40):
 
     # Asegurar que haya packs de restaurante para que la categoría no quede vacía
     if Pack.objects.filter(partner__categoria="restaurante").count() < 3:
-        resto_partner, _ = Partner.objects.get_or_create(
-            owner=owner,
-            categoria="restaurante",
-            defaults={
-                "nombre": "Restaurante Demo",
-                "direccion": "Av. Demo 789",
-                "slug": slugify("Restaurante Demo")[:140],
-            },
-        )
+        resto_partner = Partner.objects.filter(categoria="restaurante").first()
+        if not resto_partner:
+            resto_partner = Partner.objects.create(
+                owner=owner,
+                categoria="restaurante",
+                nombre="Restaurante Demo",
+                direccion="Av. Demo 789",
+                slug=slugify("Restaurante Demo")[:140],
+            )
         for _ in range(3):
             build_pack(resto_partner, None)
 
