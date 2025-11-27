@@ -2,6 +2,7 @@ from datetime import timedelta
 from random import randint, choice
 
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
