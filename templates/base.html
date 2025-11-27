@@ -170,36 +170,41 @@
   </main>
 
   <script>
-    // Ubicación simple (localStorage)
-    const ubicKey = "rf_ubicacion";
-    const label = document.getElementById("ubicacion-label");
-    const guardada = localStorage.getItem(ubicKey);
-    if (guardada) label.textContent = guardada;
+    // Ubicación simple (localStorage) - espera al DOM para que existan los nodos del modal
+    document.addEventListener("DOMContentLoaded", function(){
+      const ubicKey = "rf_ubicacion";
+      const label = document.getElementById("ubicacion-label");
+      const guardada = localStorage.getItem(ubicKey);
+      if (guardada && label) label.textContent = guardada;
 
-    const modal = document.getElementById("ubic-modal");
-    const input = document.getElementById("ubic-input");
-    const btnSave = document.getElementById("ubic-save");
-    const btnCancel = document.getElementById("ubic-cancel");
+      const modal = document.getElementById("ubic-modal");
+      const input = document.getElementById("ubic-input");
+      const btnSave = document.getElementById("ubic-save");
+      const btnCancel = document.getElementById("ubic-cancel");
+      const btnToggle = document.getElementById("btn-ubicacion");
+      if (!modal || !input || !btnSave || !btnCancel || !btnToggle || !label) return;
 
-    function closeModal(){ modal.classList.remove("open"); }
-    function openModal(){
-      modal.classList.add("open");
-      input.value = label.textContent || "";
-      setTimeout(() => input.focus(), 50);
-    }
-    function saveUbicacion(){
-      const nueva = (input.value || "").trim();
-      if (nueva) { localStorage.setItem(ubicKey, nueva); label.textContent = nueva; }
-      closeModal();
-    }
+      function closeModal(){ modal.classList.remove("open"); }
+      function openModal(){
+        modal.classList.add("open");
+        input.value = label.textContent || "";
+        setTimeout(() => input.focus(), 50);
+      }
+      function saveUbicacion(){
+        const nueva = (input.value || "").trim();
+        if (nueva) { localStorage.setItem(ubicKey, nueva); label.textContent = nueva; }
+        closeModal();
+      }
 
-    document.getElementById("btn-ubicacion").onclick = openModal;
-    btnSave.onclick = saveUbicacion;
-    btnCancel.onclick = closeModal;
-    modal.querySelector(".modal-backdrop").onclick = closeModal;
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); saveUbicacion(); }
-      if (e.key === "Escape") { closeModal(); }
+      btnToggle.onclick = openModal;
+      btnSave.onclick = saveUbicacion;
+      btnCancel.onclick = closeModal;
+      const backdrop = modal.querySelector(".modal-backdrop");
+      if (backdrop) backdrop.onclick = closeModal;
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); saveUbicacion(); }
+        if (e.key === "Escape") { closeModal(); }
+      });
     });
   </script>
 

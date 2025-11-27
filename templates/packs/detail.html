@@ -38,7 +38,7 @@
           return;
         }
         const p = await res.json();
-        const img = p.imagen_url || `https://picsum.photos/seed/${p.id}/600/300`;
+        const img = p.image_url || p.imagen_url || `https://picsum.photos/seed/${p.id}/600/300`;
         const partner = p["partner-nombre"] || p.partner_nombre || "-";
         const precio = p.precio_oferta ?? p.precio ?? 0;
 
@@ -48,6 +48,7 @@
           <p><b>Comercio:</b> ${partner}</p>
           <p><b>Descripcion:</b> ${p.descripcion || "Pack listo para retirar."}</p>
           <p><b>Etiqueta:</b> ${p.etiqueta || "-"}</p>
+          <p><b>Descripcion:</b> ${p.descripcion || "Pack listo para retirar."}</p>
           <p><b>Stock:</b> ${p.stock}</p>
           <p><b>Precio:</b> ${money(precio)}</p>
           <div id="acciones"></div>

@@ -11,8 +11,10 @@
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;}
   .pad{padding:12px;}
   .title{margin:0 0 6px;font-size:1.4rem;font-weight:800;color:#f59e0b;}
-  /* Solo en relacionados, los títulos en negro */
-  .rel-grid .title{ color:#111827; }
+  /* Relacionados: títulos discretos */
+  .rel-title{margin:0 0 4px;font-size:.98rem;font-weight:600;color:#1f2937;}
+  .rel-price{color:#6b7280;font-size:.95rem;}
+  .rel-price s{color:#9ca3af;font-weight:500;margin-left:6px;}
   .muted{color:#6b7280;}
   .price{font-weight:900;font-size:1.4rem;}
   .price s{color:#9ca3af;font-weight:500;margin-left:6px;}
@@ -71,6 +73,9 @@
           <span class="badge">Stock: {{ pack.stock }}</span>
         {% endif %}
       </div>
+      {% if pack_desc %}
+      <p class="muted" style="margin:8px 0 10px;">{{ pack_desc }}</p>
+      {% endif %}
 
       <div style="margin-top:10px;">
         <div class="muted">Retiro: {{ pack.pickup_start|date:"d/m H:i" }} - {{ pack.pickup_end|date:"H:i" }}</div>
@@ -98,8 +103,8 @@
         <a class="card link" href="/packs/{{ r.id }}/">
           <img class="thumb" src="{{ r.image_or_stock_url }}" alt="{{ r.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
           <div class="pad">
-            <p class="title">{{ r.titulo }}</p>
-            <div class="muted">
+            <p class="rel-title">{{ r.titulo }}</p>
+            <div class="rel-price">
               ${{ r.precio_oferta|default:r.precio_original }}
               {% if r.precio_oferta and r.precio_oferta < r.precio_original %}<s>${{ r.precio_original }}</s>{% endif %}
             </div>

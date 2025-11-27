@@ -20,7 +20,7 @@ h1{font-size:1.6rem;font-weight:800;margin-bottom:12px;color:#f59e0b;}
   <h1>Mi cuenta</h1>
 
   {% for m in messages %}
-    <div class="msg {% if m.tags %}{{ m.tags }}{% endif %}">{{ m }}</div>
+    {# mensajes ya se muestran en base; evitamos duplicados #}
   {% endfor %}
 
   <form method="post">

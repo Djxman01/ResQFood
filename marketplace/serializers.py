@@ -58,15 +58,15 @@ class PackSerializer(serializers.ModelSerializer):
         cat = getattr(obj.partner, "categoria", "") or ""
         title = getattr(obj, "titulo", "") or "Pack"
         templates = {
-            "verduleria": f"{title} con verduras frescas de estacion, listo para cocinar.",
-            "panaderia": f"{title} con panes y facturas del dia, ideal para compartir.",
-            "cafe": f"{title} incluye opciones dulces y saladas para brunch.",
-            "carniceria": f"{title} con cortes seleccionados, listo para tu proxima comida.",
-            "heladeria": f"{title} de helados artesanales, perfecto para postre.",
-            "supermercado": f"{title} con basicos de despensa y ahorro semanal.",
-            "almacen": f"{title} con variedades de almacen para tus comidas.",
-            "pescaderia": f"{title} con filetes y productos del mar listos para cocinar.",
-            "dietetica": f"{title} con productos saludables y snacks naturales.",
+            "verduleria": f"{title} con verduras de estacion listas para cocinar en el dia.",
+            "panaderia": f"{title} con panes, facturas y algo dulce para compartir.",
+            "cafe": f"{title} combina opciones dulces y saladas para brunch o merienda.",
+            "carniceria": f"{title} trae cortes listos para freezar o cocinar hoy.",
+            "heladeria": f"{title} de helados artesanales, ideal para postre o merienda.",
+            "supermercado": f"{title} con basicos de despensa para tu semana.",
+            "almacen": f"{title} con productos secos y dulces para el dia a dia.",
+            "pescaderia": f"{title} con filetes frescos listos para plancha u horno.",
+            "dietetica": f"{title} con snacks y productos saludables para cualquier momento.",
             "pastas": f"{title} de pastas frescas listas para hervir y servir.",
         }
         return templates.get(cat, f"{title} listo para retirar en el local.")

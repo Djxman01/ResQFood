@@ -1,4 +1,5 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
+{% load static %}
 {% block title %}Mi Carrito{% endblock %}
 
 {% block content %}
@@ -27,6 +28,7 @@
     object-fit: cover;
     border-radius: 8px;
     display: block;
+    background: #f3f4f6;
   }
 
   .wrap .btn {
@@ -95,18 +97,11 @@
     <h1 style="font-size:1.3rem; font-weight:700; margin:0; text-align:left;">Mi Carrito</h1>
   </div>
 
-  {% if pending_order_id %}
-  <div class="notice">Ten&eacute;s un pedido pendiente de pago. <a
-      href="/orders/{{ pending_order_id }}/?from=cart">Continuar pago</a></div>
-  {% endif %}
-
   {% if cart and cart.items.all %}
   <ul class="grid" style="list-style:none; padding:0; margin:0;">
     {% for it in cart.items.all %}
     <li class="card">
-      {% if it.pack.imagen %}
-      <img class="thumb" src="{{ it.pack.image_or_stock_url }}" alt="{{ it.pack.titulo }}">
-      {% endif %}
+      <img class="thumb" src="{{ it.pack.image_or_stock_url }}" alt="{{ it.pack.titulo|default:'Pack' }}" loading="lazy" decoding="async" data-placeholder="{% static 'img/placeholder-pack.svg' %}" onerror="this.onerror=null; this.src=this.getAttribute('data-placeholder');">
       <div style="margin-top:.5rem;">
         <div style="font-weight:600;">{{ it.pack.titulo }}</div>
         <div class="muted">{{ it.pack.partner.nombre }}</div>
@@ -121,7 +116,7 @@
     {% endfor %}
   </ul>
   {% else %}
-  <p class="muted">Tu carrito est&aacute; vac&iacute;o.</p>
+  <p class="muted">Tu carrito está vacío.</p>
   {% endif %}
 
   <div class="totals">

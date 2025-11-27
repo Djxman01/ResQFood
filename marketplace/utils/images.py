@@ -47,6 +47,18 @@ def stock_image_url(category_slug, key_text=""):
 
     exts = ("jpg", "jpeg", "png", "webp")
 
+    # 0) Si hay archivos en el folder, elegir uno por hash para tener variedad
+    try:
+        root = Path(getattr(settings, "BASE_DIR", os.getcwd())) / "static" / base / folder
+        if root.exists() and root.is_dir():
+            files = sorted([p for p in root.iterdir() if p.suffix.lower().lstrip(".") in exts])
+            if files:
+                idx_files = _hash_to_index(key_text or folder, len(files))
+                rel = f"{base}/{folder}/{files[idx_files].name}"
+                return static(rel)
+    except Exception:
+        pass
+
     # 1) Try hashed index with common extensions
     for ext in exts:
         candidate = f"{base}/{folder}/{idx}.{ext}"
@@ -61,17 +73,7 @@ def stock_image_url(category_slug, key_text=""):
                 return static(candidate)
 
     # 2b) No numeric files: pick any file with a supported extension from the folder
-    try:
-        root = Path(getattr(settings, "BASE_DIR", os.getcwd())) / "static" / base / folder
-        if root.exists() and root.is_dir():
-            for ext in exts:
-                files = sorted(root.glob(f"*.{ext}"))
-                if files:
-                    # build rel path from static root
-                    rel = f"{base}/{folder}/{files[0].name}"
-                    return static(rel)
-    except Exception:
-        pass
+    # (ya cubierto por el paso 0)
 
     # 3) Ultimate fallback: placeholder
     return static("img/placeholder-pack.svg")

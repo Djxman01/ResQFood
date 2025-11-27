@@ -45,8 +45,8 @@
     </form>
 
     <div class="sep"></div>
-    <p class="muted"><a class="link" href="/ayuda/recuperar/">¿Olvidaste tu contraseña?</a></p>
-    <p class="muted"><a class="link" href="/ayuda/crear-cuenta/">¿No tenés cuenta?</a></p>
+    <p class="muted"><a class="link" href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
+    <p class="muted"><a class="link" href="{% url 'signup' %}">¿No tenés cuenta?</a></p>
   </div>
 </div>
 {% endblock %}

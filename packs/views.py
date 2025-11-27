@@ -59,6 +59,22 @@ def pack_list(request):
 def pack_detail(request, pk):
     pack = get_object_or_404(Pack.objects.select_related("partner"), pk=pk)
     now = timezone.now()
+    # Descripción generada según la categoría del partner
+    cat = getattr(pack.partner, "categoria", "") or ""
+    title = getattr(pack, "titulo", "") or "Pack"
+    desc_map = {
+        "verduleria": f"{title} con verduras de estación listas para cocinar.",
+        "panaderia": f"{title} con panes, facturas y algo dulce para compartir.",
+        "cafe": f"{title} combina opciones dulces y saladas para brunch o merienda.",
+        "carniceria": f"{title} trae cortes listos para freezar o cocinar hoy.",
+        "heladeria": f"{title} de helados artesanales, ideal para postre o merienda.",
+        "supermercado": f"{title} con básicos de despensa para tu semana.",
+        "almacen": f"{title} con productos secos y dulces para el día a día.",
+        "pescaderia": f"{title} con filetes frescos listos para plancha u horno.",
+        "dietetica": f"{title} con snacks y productos saludables para cualquier momento.",
+        "pastas": f"{title} de pastas frescas listas para hervir y servir.",
+    }
+    pack_desc = desc_map.get(cat, f"{title} listo para retirar en el local.")
 
     pending_order = None
     if request.user.is_authenticated:
@@ -103,6 +119,7 @@ def pack_detail(request, pk):
         "gallery": gallery[:4],
         "meta_title": f"{pack.titulo} · {pack.partner.nombre} | ResQFood",
         "meta_desc": f"{pack.titulo} en {pack.partner.nombre}. Retiro {pack.pickup_start:%d/%m %H:%M}-{pack.pickup_end:%H:%M}. Stock {pack.stock}.",
+        "pack_desc": pack_desc,
     }
     return render(request, "marketplace/pack_detail.html", ctx)
 
