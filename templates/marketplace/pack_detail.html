@@ -32,6 +32,11 @@
   .rel-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);} 
   @media(min-width:900px){.rel-grid{grid-template-columns:repeat(4,1fr);}}
   .thumb{aspect-ratio:4/3;object-fit:cover;width:100%;display:block;background:#f3f4f6}
+  .cart-msg{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;display:none;}
+  .cart-msg.ok{border-color:#86efac;background:#ecfdf5;color:#065f46;}
+  .cart-msg.err{border-color:#fecaca;background:#fef2f2;color:#991b1b;}
+  .cart-msg-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+  .cart-msg-actions button{border:1px solid #e5e7eb;background:#fff;padding:6px 10px;border-radius:10px;cursor:pointer;font-weight:600;}
 </style>
 
 <div class="wrap" itemscope itemtype="https://schema.org/Product">
@@ -93,6 +98,7 @@
         {% endif %}
         <a class="pbtn secondary" href="/c/{{ pack.partner.slug|default:pack.partner.id }}/">Ver comercio</a>
       </div>
+      <div id="cart-msg" class="cart-msg" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -141,6 +147,30 @@
     return m ? m.pop() : '';
   }
 
+  // Inline feedback
+  function showCartMessage(text, type, actions){
+    const box = document.getElementById('cart-msg');
+    if(!box) return;
+    box.style.display = 'block';
+    box.className = 'cart-msg' + (type === 'ok' ? ' ok' : type === 'err' ? ' err' : '');
+    box.innerHTML = '';
+    const span = document.createElement('div');
+    span.textContent = text;
+    box.appendChild(span);
+    if(actions && actions.length){
+      const actionsWrap = document.createElement('div');
+      actionsWrap.className = 'cart-msg-actions';
+      actions.forEach(function(action){
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = action.label;
+        btn.onclick = action.onClick;
+        actionsWrap.appendChild(btn);
+      });
+      box.appendChild(actionsWrap);
+    }
+  }
+
   // Expose global for inline onclick
   window.addToCartPack = async function(ev){
     if(ev) ev.preventDefault();
@@ -162,17 +192,24 @@
       if(!res.ok){
         const msg = (data && data.detail) ? data.detail : 'No se pudo agregar.';
         if(/mismo comercio/i.test(msg)){
-          if(confirm(msg + '\n\nVaciar carrito e intentar de nuevo?')){
-            await fetch('/api/cart/clear/', { method:'POST', headers:{ 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin' });
-            btn.disabled=false; btn.click(); return false;
-          }
+          showCartMessage(msg, 'warn', [{
+            label: 'Vaciar carrito e intentar de nuevo',
+            onClick: async function(){
+              await fetch('/api/cart/clear/', { method:'POST', headers:{ 'X-CSRFToken': getCookie('csrftoken') }, credentials:'same-origin' });
+              btn.disabled = false;
+              btn.click();
+            }
+          }]);
+        } else {
+          showCartMessage(msg, 'err');
         }
-        alert(msg); btn.textContent = old; btn.disabled = false; return false;
+        btn.textContent = old; btn.disabled = false; return false;
       }
       if(window.updateCartBadge && typeof data.item_count !== 'undefined') updateCartBadge(data.item_count);
+      showCartMessage('Agregado al carrito', 'ok');
       btn.textContent = 'Agregado!'; setTimeout(()=>location.href='/cart/', 400);
       return false;
-    }catch(e){ btn.textContent = old; btn.disabled = false; alert('Error de red'); return false; }
+    }catch(e){ btn.textContent = old; btn.disabled = false; showCartMessage('Error de red', 'err'); return false; }
   };
 
   // Image fallbacks

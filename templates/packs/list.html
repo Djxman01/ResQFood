@@ -20,6 +20,11 @@
   #lista > .card-item img { width:100%; display:block; aspect-ratio:4/3; object-fit:cover; background:#f3f4f6; }
   #lista > .card-item .card-actions { padding:12px; border-top:1px solid #eee; }
   #lista > .card-item .card-actions button { border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px; background:#fff; cursor:pointer; }
+  .cart-msg{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;display:none;}
+  .cart-msg.ok{border-color:#86efac;background:#ecfdf5;color:#065f46;}
+  .cart-msg.err{border-color:#fecaca;background:#fef2f2;color:#991b1b;}
+  .cart-msg-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+  .cart-msg-actions button{border:1px solid #e5e7eb;background:#fff;padding:6px 10px;border-radius:10px;cursor:pointer;font-weight:600;}
 </style>
 
 <form id="filtros" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:end; margin: .5rem 0 1rem;">
@@ -56,6 +61,7 @@
 </form>
 
 <p id="ubicacionInfo" style="color:#666; font-size:14px; margin-top:-6px;"></p>
+<div id="cart-msg" class="cart-msg" role="status" aria-live="polite"></div>
 
 <div id="lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;"></div>
 <div id="paginacion" style="display:flex;gap:.5rem;margin:1rem 0;"></div>
@@ -237,6 +243,32 @@
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
   }
+  function showCartMessage(text, type, actions){
+    const box = document.getElementById('cart-msg');
+    if(!box) return;
+    box.style.display = 'block';
+    box.className = 'cart-msg' + (type === 'ok' ? ' ok' : type === 'err' ? ' err' : '');
+    box.innerHTML = '';
+    const span = document.createElement('div');
+    span.textContent = text;
+    box.appendChild(span);
+    if(actions && actions.length){
+      const wrap = document.createElement('div');
+      wrap.className = 'cart-msg-actions';
+      actions.forEach(function(action){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = action.label;
+        b.onclick = action.onClick;
+        wrap.appendChild(b);
+      });
+      box.appendChild(wrap);
+    }
+  }
+  async function clearAndRetry(packId){
+    await fetch('/api/cart/clear/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin' });
+    return addToCart(packId);
+  }
   async function addToCart(packId){
     try{
       const res = await fetch('/api/cart/add/', {
@@ -251,21 +283,22 @@
         return;
       }
       if(!res.ok){
-        if(data && data.detail){
-          if(confirm(data.detail + '\n\n¿Vaciar carrito e intentar de nuevo?')){
-            const clr = await fetch('/api/cart/clear/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, credentials:'same-origin' });
-            if(clr.ok){ return addToCart(packId); }
-          }
+        const msg = (data && data.detail) ? data.detail : 'No se pudo agregar.';
+        if(/mismo comercio/i.test(msg)){
+          showCartMessage(msg, 'warn', [{
+            label: 'Vaciar carrito e intentar de nuevo',
+            onClick: () => clearAndRetry(packId)
+          }]);
         }else{
-          alert('No se pudo agregar.');
+          showCartMessage(msg, 'err');
         }
         return;
       }
       if(data && typeof data.item_count !== 'undefined'){
         if(window.updateCartBadge) updateCartBadge(data.item_count);
       }
-      alert('Agregado al carrito');
-    }catch(e){ alert('Error de red'); }
+      showCartMessage('Agregado al carrito', 'ok');
+    }catch(e){ showCartMessage('Error de red', 'err'); }
   }
 </script>
 {% endblock %}
